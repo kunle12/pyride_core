@@ -237,7 +237,7 @@ PyModuleExtendedCommandHandler::PyModuleExtendedCommandHandler( PyModuleExtensio
  *
  */
 /*! \typedef onRemoteCommand(cmd_id, cmd_text)
- *  \memberof PyPR2.
+ *  \memberof ROBOT_MODEL_DOXYGEN.
  *  \brief Callback function when a custom command is received from a remote client.
  *  \param int cmd_id. Custom command ID.
  *  \param str cmd_text. Custom command text string.
@@ -286,7 +286,7 @@ void PyModuleExtendedCommandHandler::cancelCurrentOperation()
 }
 
 /*! \typedef onUserLogOn(user_name)
- *  \memberof PyPR2.
+ *  \memberof ROBOT_MODEL_DOXYGEN.
  *  \brief Callback function when a user logs in through a remote client.
  *  \param str user_name. The name of the user.
  *  \return None.
@@ -318,7 +318,7 @@ bool PyModuleExtendedCommandHandler::onUserLogOn( const std::string & username )
 }
 
 /*! \typedef onUserLogOff(user_name)
- *  \memberof PyPR2.
+ *  \memberof ROBOT_MODEL_DOXYGEN.
  *  \brief Callback function when a remote user logs off.
  *  \param str user_name. The name of the user.
  *  \return None.
@@ -348,7 +348,7 @@ void PyModuleExtendedCommandHandler::onUserLogOff( const std::string & username 
  */
 /**@{*/
 /*! \typedef onTimer(timer_id)
- *  \memberof PyPR2.
+ *  \memberof ROBOT_MODEL_DOXYGEN.
  *  \brief Callback function when a timer object is fired.
  *  \param int timer_id. ID of the timer object.
  *  \return None.
@@ -373,7 +373,7 @@ void PyModuleExtendedCommandHandler::onTimer( const long timerID )
 }
 
 /*! \typedef onTimerLapsed(timer_id)
- *  \memberof PyPR2.
+ *  \memberof ROBOT_MODEL_DOXYGEN.
  *  \brief Callback function when a timer object is fired for the last time.
  *  \param int timer_id. ID of the timer object.
  *  \return None.
@@ -404,8 +404,8 @@ void PyModuleExtendedCommandHandler::onTimerLapsed( const long timerID )
  */
 /**@{*/
 /*! \typedef onSnapshotImage(image_name)
- *  \memberof PyPR2.
- *  \brief Callback function when PyPR2.takeCameraSnapshot is called.
+ *  \memberof ROBOT_MODEL_DOXYGEN.
+ *  \brief Callback function when ROBOT_MODEL_DOXYGEN.takeCameraSnapshot is called.
  *  \param str image_name. Path for the saved image.
  *  \return None.
  */

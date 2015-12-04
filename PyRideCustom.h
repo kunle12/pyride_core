@@ -8,7 +8,8 @@
  */
 
 // This file contains list of custom command and status definitions
-// that extends the current communication between NAOs and iPads.
+// that extends the current communication between robots and 
+// remote clients.
 #ifndef PyRideCustom_h_DEFINED
 #define PyRideCustom_h_DEFINED
 
