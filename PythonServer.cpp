@@ -761,6 +761,56 @@ void PythonServer::finiModuleExtension()
   pPyMod_ = NULL;
 }
 
+bool PythonServer::getModuleDir( const std::string & modStr, const std::string & metdStr, std::vector<std::string> & mlist )
+{
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  PyObject * objList = PyObject_Dir( pMainModule_ );
+
+  if (!objList || modStr.empty()) {
+    PyGILState_Release( gstate );
+    return false;
+  }
+  int listSize = PyList_Size( objList );
+
+  if (listSize == 0) { //something is seriously wrong
+    Py_DECREF( objList );
+    PyGILState_Release( gstate );
+    return false;
+  }
+
+  mlist.clear();
+
+  if (metdStr.empty()) { // search module listing
+    for (int i = 0; i < listSize; i++) {
+      std::string moduleStr = PyString_AsString( PyList_GetItem( objList, i ) );
+      if (moduleStr.find( modStr ) == 0) {
+        mlist.push_back( moduleStr );
+      }
+    }
+  }
+  else {
+    PyObject * modObj = PyObject_GetAttrString( pMainModule_, modStr.c_str() );
+    if (modObj && PyModule_Check( modObj )) {
+      PyObject * metdList = PyObject_Dir( modObj );
+      if (metdList && (listSize = PyList_Size( metdList )) > 0) {
+        for (int i = 0; i < listSize; i++) {
+          std::string methodStr = PyString_AsString( PyList_GetItem( metdList, i ) );
+          if (methodStr.find( metdStr ) == 0) {
+            mlist.push_back( methodStr );
+          }
+        }
+      }
+    }
+    Py_XDECREF( modObj );
+  }
+  Py_DECREF( objList );
+  PyGILState_Release( gstate );
+
+  return (mlist.size() > 0);
+}
+
 void PythonServer::write( const char * msg )
 {
   if (activeSession_) {
@@ -1008,7 +1058,6 @@ bool PythonSession::handleVTCommand()
   return true;
 }
 
-
 /**
  *   This method handles a single character. It appends or inserts it
  *   into the buffer at the current position.
@@ -1095,9 +1144,9 @@ void PythonSession::handleLine( PythonServer::ClientItem * client )
 void PythonSession::handleDel()
 {
   if (charPos_ > 0) {
-    currentLine_.erase( charPos_ - 1, 1 );
-    this->write( "\b" ERASE_EOL );
     charPos_--;
+    this->write( "\b" ERASE_EOL );
+    currentLine_.erase( charPos_, 1 );
     int len = currentLine_.length() - charPos_;
     this->write( currentLine_.substr(charPos_, len).c_str() );
 
@@ -1118,9 +1167,100 @@ void PythonSession::handleDel()
  */
 void PythonSession::handleTab()
 {
-  // insert tab char
-  readBuffer_[0] = (unsigned char) '\t';
-  this->handleChar();
+  readBuffer_.pop_front();
+  if (charPos_ > 0 && currentLine_.find_first_not_of(" \f\n\t\v") != std::string::npos) {
+    // a non empty string with characters other than white spaces
+    std::string currentSubline = currentLine_.substr( 0, charPos_ );
+    std::string lastToken;
+    std::size_t found = currentSubline.find_last_of( " \t" );
+    if (found == std::string::npos) {
+      lastToken = currentSubline;
+    }
+    else {
+      lastToken = currentSubline.substr( found+1 );
+    }
+    if (!lastToken.empty()) {
+      std::vector<std::string> mylist;
+      found = lastToken.find_last_of( "." );
+      std::string moduleStr, methodStr;
+      if (found == std::string::npos) {
+        // search top level module
+        moduleStr = lastToken;
+      }
+      else {
+        moduleStr = lastToken.substr( 0, found );
+        methodStr = lastToken.substr( found+1 );
+      }
+
+      if (server_->getModuleDir( moduleStr, methodStr, mylist )) {
+        int lsize = (int)mylist.size();
+        if (lsize == 1) { // complete the string
+          if (methodStr.empty()) {
+            this->tabCompletion( mylist[0], moduleStr );
+          }
+          else {
+            this->tabCompletion( mylist[0], methodStr );
+          }
+        }
+        else {
+          int minlen = 500, maxlen = 0;
+          int minidx = -1;
+          for (int i = 0; i < lsize; i++) {
+            int len = mylist[i].length();
+            if (len > maxlen) {
+              maxlen = len;
+            }
+            if (len < minlen) {
+              minlen = len;
+              minidx = i;
+            }
+          }
+          char output[TERMINAL_SIZE+1];
+          char * optr = (char *)&output;
+          int spacing = maxlen + 2;
+          int itidx = 0;
+          this->write( "\r\n" );
+
+          while (itidx < lsize) {
+            sprintf( optr, "%-*s", spacing, mylist[itidx++].c_str() );
+            optr += spacing;
+            if ((optr - output) >= (TERMINAL_SIZE - spacing)) {
+              this->write( output );
+              this->write( "\r\n" );
+              optr = (char*) output;
+            }
+          }
+          if (optr > output) {
+            this->write( output );
+            this->write( "\r\n" );
+          }
+          this->writePrompt();
+          this->write( currentLine_.c_str() );
+        }
+      }
+      else { // cause a beep
+        char beepStr[] = { KEY_CTRL_G, 0 };
+        this->write( beepStr );
+      }
+    }
+  }
+  else {
+    // replace tab with two spaces
+    currentLine_.insert( charPos_, "  " );
+    int len = currentLine_.length() - charPos_;
+    this->write( currentLine_.substr(charPos_, len).c_str() );
+
+    int dflen = len - 2;
+    char * bstr = new char[dflen+1];
+    for(int i = 0; i < dflen; i++)
+      bstr[i] = '\b';
+    bstr[dflen] = '\0';
+
+    this->write( bstr );
+    delete [] bstr;
+
+    charPos_ += 2;
+  }
 }
 
 /**
@@ -1215,6 +1355,31 @@ void PythonSession::handleEnd()
   readBuffer_.pop_front();
 }
 
+void PythonSession::tabCompletion( const std::string & fullStr, const std::string & curStr, bool fullprint )
+{
+  int rlen = fullStr.length() - curStr.length();
+
+  currentLine_.insert( charPos_, fullStr, curStr.length(), rlen );
+  int len = currentLine_.length() - charPos_;
+  if (fullprint) {
+    this->writePrompt();
+    this->write( currentLine_.c_str() );
+  }
+  else {
+    this->write( currentLine_.substr(charPos_, len).c_str() );
+  }
+
+  int dflen = len - rlen;
+  char * bstr = new char[dflen+1];
+  for(int i = 0; i < dflen; i++)
+    bstr[i] = '\b';
+  bstr[dflen] = '\0';
+
+  this->write( bstr );
+  delete [] bstr;
+
+  charPos_+= rlen;
+}
 void PythonSession::write( const char * str )
 {
   if (strlen( str ) == 0) return;

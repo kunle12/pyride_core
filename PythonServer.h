@@ -44,12 +44,14 @@
 #define KEY_CTRL_C      3
 #define KEY_CTRL_D      4
 #define KEY_CTRL_E      5
+#define KEY_CTRL_G      7
 #define KEY_BACKSPACE   8
 #define KEY_HTAB        9
 #define KEY_DEL         127
 #define KEY_ENTER       13
 #define KEY_ESC         27
 
+#define TERMINAL_SIZE   80
 #define MAX_HISTORY_COMMAND      20
 #define PYRIDE_MAIN_SCRIPT_NAME  "py_main"
 
@@ -140,6 +142,8 @@ private:
   void finiModuleExtension();
 
   void initIPAddresses();
+  bool getModuleDir( const std::string & modStr, const std::string & metdStr,
+      std::vector<std::string> & mlist );
 
   void processIncomingData( fd_set * readyFDSet );
   void processUDPInput( const unsigned char * recBuffer, int recBytes, struct sockaddr_in & cAddr );
@@ -197,6 +201,9 @@ private:
   void  handleRight();
   void  handleHome();
   void  handleEnd();
+
+  void  tabCompletion( const std::string & fullStr, const std::string & curStr,
+      bool fullprint = false );
 };
 } //namespace pyride
 #endif // PythonServer_h_DEFINED
