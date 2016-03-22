@@ -20,7 +20,7 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <sys/time.h>
-#define max( a, b ) (a > b) ? a : b
+#define local_max( a, b ) (a > b) ? a : b
 
 #endif
 
@@ -252,7 +252,7 @@ bool PyRideNetComm::initUDPListener()
     return false;
   }
 
-  maxFD_ = max( maxFD_, udpSocket_ );
+  maxFD_ = local_max( maxFD_, udpSocket_ );
   FD_SET( udpSocket_, &masterFDSet_ );
 
   if (dgramBuffer_ == NULL)
@@ -300,7 +300,7 @@ bool PyRideNetComm::initTCPListener()
   }
 
   INFO_MSG( "Listening on TCP port %d for remote access.\n", PYRIDE_CONTROL_PORT );
-  maxFD_ = max( maxFD_, tcpSocket_ );
+  maxFD_ = local_max( maxFD_, tcpSocket_ );
   FD_SET( tcpSocket_, &masterFDSet_ );
 
   return true;
@@ -1619,7 +1619,7 @@ PyRideNetComm::ClientItem * PyRideNetComm::addFdToClientList( const SOCKET_T & f
     clientList_ = newClient;
   }
   FD_SET( fd, &masterFDSet_ );
-  maxFD_ = max( fd, maxFD_ );
+  maxFD_ = local_max( fd, maxFD_ );
 
 #ifdef WIN32
   LeaveCriticalSection( &t_criticalSection_ );

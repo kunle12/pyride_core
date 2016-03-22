@@ -13,7 +13,6 @@
 #ifdef __cplusplus
 
 #include <ccrtp/rtp.h>
-#include <cc++/config.h>
 #include <vector>
 #include <string>
 #if defined ROS_BUILD || defined IOS_BUILD
