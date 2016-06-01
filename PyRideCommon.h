@@ -220,7 +220,8 @@ typedef enum {
   PR2        = 0x2,
   TURTLE_BOT = 0x3,
   ROMO       = 0x4,
-  PEPPER     = 0x5
+  PEPPER     = 0x5,
+  REEM       = 0x6
 } RobotType;
 
 typedef struct {
