@@ -241,6 +241,7 @@ bool PythonServer::initPyInterpreter()
   std::string sysPathStr( Py_GetPath() );
   size_t delpos = sysPathStr.find( ':' );
   sysPathStr.replace( 0, delpos, scriptPath );
+  sysPathStr += packagePath + "/dist-packages";
   sysPathStr += packagePath + "/site-packages";
   PySys_SetPath( (char*)sysPathStr.c_str() );
 
