@@ -21,7 +21,12 @@
 #include <celt.h>
 #endif
 #include "PyRideCommon.h"
+#ifdef JPEG62
 #include "jdatabufferdst.h"
+#else
+#include <jpeglib.h>
+#include <jerror.h>
+#endif
 
 #ifdef ROS_BUILD
 #define PYRIDE_SNAPSHOT_SAVE_DIRECTORY     "/removable/recordings/cameras"
@@ -140,7 +145,12 @@ protected:
 private:  
   unsigned char * outBuffer_;
   int outBufferSize_;
-  
+
+#ifndef JPEG62
+  unsigned char * jpegMemBuffer_;
+  int jpegMemBufferSize_;
+#endif
+
   struct jpeg_compress_struct cinfo_;
   struct jpeg_error_mgr jerr_;
   int imageWidth_;

@@ -262,11 +262,12 @@ VideoDevice::VideoDevice() :
   dataHandler_( NULL ),
   outBuffer_( NULL ),
   outBufferSize_( 0 ),
+  jpegMemBuffer_( NULL ),
+  jpegMemBufferSize_( 0 ),
   imageWidth_( 320 ),
   imageHeight_( 240 ),
   imageSize_( 320 * 240 )
 {
-  
   vSettings_.fps = 5;
   vSettings_.format = RGB;
   vSettings_.resolution = 1; // 320x240
@@ -278,7 +279,7 @@ VideoDevice::VideoDevice() :
   DualRTPUDPIPv4Channel * dataChan = streamSession_->getDSO();
   SOCKET_T sendSock = dataChan->getSendSocket();
   
-  int optval = 50000;
+  int optval = 500000;
   setsockopt( sendSock, SOL_SOCKET, SO_SNDBUF, (int *)&optval, sizeof( int ) );
   //streamSession_->setSessionBandwidth( 100000 );
   streamSession_->startRunning();
@@ -292,8 +293,15 @@ VideoDevice::~VideoDevice()
     outBuffer_ = NULL;
     outBufferSize_ = 0;
   }
-
+#ifdef JPEG62
   jpeg_databuffer_free( &cinfo_ );
+#else
+  if (jpegMemBuffer_) {
+    delete [] jpegMemBuffer_;
+    jpegMemBuffer_ = NULL;
+    jpegMemBufferSize_ = 0;
+  }
+#endif
   jpeg_destroy_compress( &cinfo_ );
 }
 
@@ -309,8 +317,13 @@ void VideoDevice::setProcessParameters()
     delete [] outBuffer_;
     outBuffer_ = NULL;
     outBufferSize_ = 0;
-
+#ifdef JPEG62
     jpeg_databuffer_free( &cinfo_ );
+#else
+    delete [] jpegMemBuffer_;
+    jpegMemBuffer_ = NULL;
+    jpegMemBufferSize_ = 0;
+#endif
     jpeg_destroy_compress( &cinfo_ );
   }
   outBufferSize_ = imageWidth_ * imageHeight_ * 3;
@@ -318,7 +331,13 @@ void VideoDevice::setProcessParameters()
 
   cinfo_.err = jpeg_std_error( &jerr_ );
   jpeg_create_compress( &cinfo_ );
+#ifdef JPEG62
   jpeg_databuffer_dest( &cinfo_ );
+#else
+  jpegMemBufferSize_ = imageWidth_ * imageHeight_ * 3 * 2;
+  jpegMemBuffer_ = new unsigned char[jpegMemBufferSize_];
+#endif
+
   cinfo_.image_width = imageWidth_;
   cinfo_.image_height = imageHeight_;
   cinfo_.input_components = 3;
@@ -451,6 +470,13 @@ int VideoDevice::compressToJPEG( const unsigned char * imageData, const int imag
 {
   JSAMPROW rowPtr[1];
   unsigned char * data = (unsigned char *)imageData;
+#ifdef JPEG62
+  int compressedDataSize = 0;
+#else
+  unsigned long compressedDataSize = (unsigned long)jpegMemBufferSize_;
+  jpeg_mem_dest( &cinfo_, &jpegMemBuffer_, &compressedDataSize );
+  compressedData = jpegMemBuffer_;
+#endif
   jpeg_start_compress( &cinfo_, TRUE );
   
   int rowStride = imageWidth_ * 3;
@@ -465,10 +491,10 @@ int VideoDevice::compressToJPEG( const unsigned char * imageData, const int imag
   
   jpeg_finish_compress( &cinfo_ );
   
-  int compressedDataSize;
+#ifdef JPEG62
   compressedData = get_jpeg_data_and_size( &cinfo_, &compressedDataSize );
-  
-  return compressedDataSize;
+#endif
+  return (int)compressedDataSize;
 }
 
 void VideoDevice::processAndSendImageData( const unsigned char * imageData, const int imageDataSize, ImageFormat format )
