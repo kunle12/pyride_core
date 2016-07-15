@@ -196,7 +196,7 @@ void ServerDataProcessor::updateOperationalStatus( RobotOperationalState status,
   delete [] data;
 }
 
-long ServerDataProcessor::addTimer( int initialTime, long repeats, int interval )
+long ServerDataProcessor::addTimer( float initialTime, long repeats, float interval )
 {
   if (repeats < 0) {
     return pNetComm_->addTimer( initialTime, -1, interval );

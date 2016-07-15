@@ -146,7 +146,7 @@ public:
   void disconnectClientWithFD( SOCKET_T fd );
   bool getIDFromIP( int & addr );
   bool getMyIPAddress( int & addr );
-  long addTimer( int initialTime, long repeats = 0, int interval = 1 );
+  long addTimer( float initialTime, long repeats = 0, float interval = 1.0 );
   void delTimer( long tID );
   bool isTimerRunning( long tID );
   long totalTimers() { return timerCount_; }
@@ -175,8 +175,8 @@ private:
   typedef struct sTimerObj {
     long tID;
     long remainCount; // -1 for infinite
-    int interval;
-    time_t nextTrigTime;
+    int interval; // unit in 10th of a second
+    long nextTrigTime; // unit in 10th of a second
     bool isExecuting;
 #ifdef WIN32
     HANDLE timerThread;

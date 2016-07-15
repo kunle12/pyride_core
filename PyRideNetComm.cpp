@@ -25,6 +25,7 @@
 #endif
 
 #include <openssl/sha.h>
+#include <math.h>
 
 #include "PyRideNetComm.h"
 
@@ -485,7 +486,7 @@ void PyRideNetComm::continuousProcessing()
 
     struct timeval timeout; 
     timeout.tv_sec = 0;
-    timeout.tv_usec = 500000; // 500ms
+    timeout.tv_usec = 50000; // 50ms
 
     select( maxFD + 1, &readyFDSet, NULL, NULL, &timeout );
 
@@ -1770,9 +1771,9 @@ inline bool PyRideNetComm::isNonExclusiveCommand( PyRideExtendedCommand cmd )
 }
 
 #pragma marker timer implementation
-long PyRideNetComm::addTimer( int initialTime, long repeats, int interval )
+long PyRideNetComm::addTimer( float initialTime, long repeats, float interval )
 {
-  if (initialTime <= 0 || repeats < -1 || interval <= 0) {
+  if (initialTime <= 0.0 || repeats < -1 || interval <= 0.0) {
     return -1; // invalid. no timer is created.
   }
 
@@ -1783,18 +1784,19 @@ long PyRideNetComm::addTimer( int initialTime, long repeats, int interval )
 #else
   gettimeofday( &now, NULL );
 #endif
+  long nowin10th = now.tv_sec * 10 + now.tv_usec / 1E5;
 
   TimerObj * newTimer = new TimerObj;
   newTimer->pNext = NULL;
   newTimer->remainCount = (repeats == 0) ? 1 : repeats;
   newTimer->isExecuting = false;
-  newTimer->interval = interval;
+  newTimer->interval = (int)floorf(interval * 10);
 #ifdef WIN32
   newTimer->timerThread = (HANDLE)NULL;
 #else
   newTimer->timerThread = (pthread_t)NULL;
 #endif
-  newTimer->nextTrigTime = now.tv_sec + initialTime;
+  newTimer->nextTrigTime = nowin10th + (long)floorf(initialTime * 10);
 
 #ifdef WIN32
   EnterCriticalSection( &timer_criticalSection_ );
@@ -1944,6 +1946,7 @@ void PyRideNetComm::checkTimers()
   gettimeofday( &now, NULL );
 #endif
 
+  long nowin10th = now.tv_sec * 10 + now.tv_usec / 1E5;
 #ifdef WIN32
   EnterCriticalSection( &timer_criticalSection_ );
 #else
@@ -1954,7 +1957,7 @@ void PyRideNetComm::checkTimers()
   TimerObj * prevTimerPtr = timerPtr;
 
   while (timerPtr) {
-    if (timerPtr->nextTrigTime <= now.tv_sec) {
+    if (timerPtr->nextTrigTime <= nowin10th) {
       if (timerPtr->remainCount != -1) {
         timerPtr->remainCount--;
       }
@@ -2000,7 +2003,7 @@ void PyRideNetComm::checkTimers()
         timerCount_--;
       }
       else {
-        timerPtr->nextTrigTime = now.tv_sec + timerPtr->interval;
+        timerPtr->nextTrigTime = nowin10th + timerPtr->interval;
       }
     }
     else {

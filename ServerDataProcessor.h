@@ -83,7 +83,7 @@ public:
     defaultRobotInfo_.pose = pose;
   }
 
-  long addTimer( int initialTime, long repeats = 0, int interval = 1 );
+  long addTimer( float initialTime, long repeats = 0, float interval = 1.0 );
   void delTimer( long tID );
   void delAllTimers();
   long totalTimers();

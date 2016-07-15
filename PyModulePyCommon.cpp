@@ -361,18 +361,18 @@ static PyObject * PyModule_ChangeUserPassword( PyObject * self, PyObject * args 
 /*! \typedef addTimer(init_start, repeats, interval)
  *  \memberof ROBOT_MODEL_DOXYGEN.
  *  \brief Add a timer object
- *  \param int init_start. Initial start time (in seconds) after the method is called.
+ *  \param float init_start. Initial start time (in seconds, precision to 10th of a second) after the method is called.
  *  \param long repeats. A number of times the timer shall be called. -1 means infinite.
- *  \param int interval. Time interval (in seconds) between timer callbacks.
+ *  \param float interval. Time interval (in seconds, precision to 10th of a second) between timer callbacks.
  *  \return long The ID of the timer object.
  */
 static PyObject * PyModule_AddTimer( PyObject * self, PyObject * args )
 {
-  int initTime;
+  float initTime;
   long repeats = 0;
-  long interval = 1;
+  float interval = 1.0;
 
-  if (!PyArg_ParseTuple( args, "i|ll", &initTime, &repeats, &interval )) {
+  if (!PyArg_ParseTuple( args, "f|lf", &initTime, &repeats, &interval )) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
