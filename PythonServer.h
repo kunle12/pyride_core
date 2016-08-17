@@ -102,6 +102,8 @@ private:
   bool isActive_;
   bool hasInterpreter_;
 
+  PyInterpreterState * intpState_;
+
   PyObject *    prevStderr_;
   PyObject *    prevStdout_;
   PyObject *    pSysModule_;
@@ -140,6 +142,8 @@ private:
   void finiPyInterpreter();
   void initModuleExtension();
   void finiModuleExtension();
+
+  PyInterpreterState * getInterpreterState() const { return intpState_; }
 
   void initIPAddresses();
   bool getModuleDir( const std::string & modStr, const std::string & metdStr,

@@ -27,6 +27,7 @@ PythonServer::PythonServer() :
   runThread_( (pthread_t)NULL ),
   isActive_( false ),
   hasInterpreter_( false ),
+  intpState_( NULL ),
   prevStderr_( NULL ),
   prevStdout_( NULL ),
   pSysModule_( NULL ),
@@ -212,10 +213,13 @@ bool PythonServer::initPyInterpreter()
   }
   INFO_MSG( "use script path %s.\n", scriptPath );
 
+  PyGILState_STATE gstate;
   // initialise Python interpreter
   if (Py_IsInitialized()) {
     INFO_MSG( "Python interpreter is already in use, restartpython() is not allowed.\n" );
     hasInterpreter_ = true;
+    // we are not the thread starting the python
+    gstate = PyGILState_Ensure();
   }
   else {
     if (strlen(customPythonHome)) {
@@ -227,11 +231,9 @@ bool PythonServer::initPyInterpreter()
 
     Py_InitializeEx( 0 );
     PyEval_InitThreads();
-    PyEval_ReleaseLock(); // release the GIL lock so that other threads can acquire it.
   }
-
-  PyGILState_STATE gstate;
-  gstate = PyGILState_Ensure();
+  PyThreadState* state = PyThreadState_Get();
+  intpState_ = state->interp;
 
   // modify existing system path
   std::string versionStr = strtok( (char*)Py_GetVersion(), " " );
@@ -270,7 +272,13 @@ bool PythonServer::initPyInterpreter()
   }
 
   initModuleExtension();
-  PyGILState_Release( gstate );
+
+  if (hasInterpreter_) {
+    PyGILState_Release( gstate );
+  }
+  else {
+    PyEval_SaveThread(); // release the GIL lock so that other threads can acquire it.
+  }
   
   return true;
 }
