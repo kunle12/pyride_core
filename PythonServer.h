@@ -146,8 +146,7 @@ private:
   PyInterpreterState * getInterpreterState() const { return intpState_; }
 
   void initIPAddresses();
-  bool getModuleDir( const std::string & modStr, const std::string & metdStr,
-      std::vector<std::string> & mlist );
+  bool getObjectDir( const std::string & searchStr, std::vector<std::string> & mlist );
 
   void processIncomingData( fd_set * readyFDSet );
   void processUDPInput( const unsigned char * recBuffer, int recBytes, struct sockaddr_in & cAddr );
@@ -193,20 +192,20 @@ private:
 
   void connectReady();
   
-  bool  handleTelnetCommand();
-  bool  handleVTCommand();
-  void  handleLine( PythonServer::ClientItem * client );
-  void  handleDel();
-  void  handleChar();
-  void  handleTab();
-  void  handleUp();
-  void  handleDown();
-  void  handleLeft();
-  void  handleRight();
-  void  handleHome();
-  void  handleEnd();
+  bool handleTelnetCommand();
+  bool handleVTCommand();
+  void handleLine( PythonServer::ClientItem * client );
+  void handleDel();
+  void handleChar();
+  void handleTab();
+  void handleUp();
+  void handleDown();
+  void handleLeft();
+  void handleRight();
+  void handleHome();
+  void handleEnd();
 
-  void  tabCompletion( const std::string & fullStr, const std::string & curStr,
+  void tabCompletion( const std::string & fullStr, const std::string & curStr,
       bool fullprint = false );
 };
 } //namespace pyride

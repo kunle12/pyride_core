@@ -770,51 +770,60 @@ void PythonServer::finiModuleExtension()
   pPyMod_ = NULL;
 }
 
-bool PythonServer::getModuleDir( const std::string & modStr, const std::string & metdStr, std::vector<std::string> & mlist )
+bool PythonServer::getObjectDir( const std::string & searchStr, std::vector<std::string> & mlist )
 {
+  mlist.clear();
+
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
 
-  PyObject * objList = PyObject_Dir( pMainModule_ );
+  PyObject * searchingObj = pMainModule_;
+  Py_INCREF( searchingObj );
 
-  if (!objList || modStr.empty()) {
-    PyGILState_Release( gstate );
-    return false;
-  }
-  int listSize = PyList_Size( objList );
+  std::string targetStr = searchStr;
+  std::size_t found, listSize;
 
-  if (listSize == 0) { //something is seriously wrong
-    Py_DECREF( objList );
-    PyGILState_Release( gstate );
-    return false;
-  }
+  while (!targetStr.empty()) {
+    found = targetStr.find_first_of( "." );
 
-  mlist.clear();
-
-  if (metdStr.empty()) { // search module listing
-    for (int i = 0; i < listSize; i++) {
-      std::string moduleStr = PyString_AsString( PyList_GetItem( objList, i ) );
-      if (moduleStr.find( modStr ) == 0) {
-        mlist.push_back( moduleStr );
-      }
-    }
-  }
-  else {
-    PyObject * modObj = PyObject_GetAttrString( pMainModule_, modStr.c_str() );
-    if (modObj && PyModule_Check( modObj )) {
-      PyObject * metdList = PyObject_Dir( modObj );
+    if (found == std::string::npos) {
+      // search the current object for attr/meth/obj match to the search string
+      PyObject * metdList = PyObject_Dir( searchingObj );
       if (metdList && (listSize = PyList_Size( metdList )) > 0) {
         for (int i = 0; i < listSize; i++) {
           std::string methodStr = PyString_AsString( PyList_GetItem( metdList, i ) );
-          if (methodStr.find( metdStr ) == 0) {
+          if (methodStr.find( targetStr ) == 0) {
             mlist.push_back( methodStr );
           }
         }
       }
+      Py_XDECREF( metdList );
+      targetStr.clear();
     }
-    Py_XDECREF( modObj );
+    else {
+      PyObject * modObj = PyObject_GetAttrString( searchingObj, targetStr.substr( 0, found ).c_str() );
+      if (modObj) {
+        targetStr = targetStr.substr( found+1 );
+        Py_DECREF( searchingObj );
+        searchingObj = modObj;
+        if (targetStr.empty()) { // special case give full list of options
+          PyObject * metdList = PyObject_Dir( searchingObj );
+          if (metdList && (listSize = PyList_Size( metdList )) > 0) {
+            for (int i = 0; i < listSize; i++) {
+              std::string methodStr = PyString_AsString( PyList_GetItem( metdList, i ) );
+              mlist.push_back( methodStr );
+            }
+          }
+          Py_XDECREF( metdList );
+        }
+      }
+      else {
+        targetStr.clear(); // not found
+      }
+    }
   }
-  Py_DECREF( objList );
+  Py_DECREF( searchingObj );
+
   PyGILState_Release( gstate );
 
   return (mlist.size() > 0);
@@ -1181,7 +1190,7 @@ void PythonSession::handleTab()
     // a non empty string with characters other than white spaces
     std::string currentSubline = currentLine_.substr( 0, charPos_ );
     std::string lastToken;
-    std::size_t found = currentSubline.find_last_of( " \t" );
+    std::size_t found = currentSubline.find_last_of( " ([\t" );
     if (found == std::string::npos) {
       lastToken = currentSubline;
     }
@@ -1190,28 +1199,19 @@ void PythonSession::handleTab()
     }
     if (!lastToken.empty()) {
       std::vector<std::string> mylist;
-      found = lastToken.find_last_of( "." );
-      std::string moduleStr, methodStr;
-      if (found == std::string::npos) {
-        // search top level module
-        moduleStr = lastToken;
-      }
-      else {
-        moduleStr = lastToken.substr( 0, found );
-        methodStr = lastToken.substr( found+1 );
-      }
 
-      if (server_->getModuleDir( moduleStr, methodStr, mylist )) {
+      if (server_->getObjectDir( lastToken, mylist )) {
         int lsize = (int)mylist.size();
         if (lsize == 1) { // complete the string
-          if (methodStr.empty()) {
-            this->tabCompletion( mylist[0], moduleStr );
+          found = lastToken.find_last_of( "." );
+          if (found == std::string::npos) {
+            this->tabCompletion( mylist[0], lastToken );
           }
           else {
-            this->tabCompletion( mylist[0], methodStr );
+            this->tabCompletion( mylist[0], lastToken.substr( found+1 ) );
           }
         }
-        else {
+        else { // print all options in a table list
           int minlen = 500, maxlen = 0;
           int minidx = -1;
           for (int i = 0; i < lsize; i++) {
@@ -1245,6 +1245,15 @@ void PythonSession::handleTab()
           }
           this->writePrompt();
           this->write( currentLine_.c_str() );
+          // restore cursor position
+          int len = currentLine_.length() - charPos_;
+          char * bstr = new char[len+1];
+          for(int i = 0; i < len; i++)
+            bstr[i] = '\b';
+          bstr[len] = '\0';
+
+          this->write( bstr );
+          delete [] bstr;
         }
       }
       else { // cause a beep
