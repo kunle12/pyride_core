@@ -7,7 +7,6 @@
  *
  */
 #include <ccrtp/rtp.h>
-#include <cc++/config.h>
 
 #include "RTPDataReceiver.h"
 #include "PyRideCommon.h"
