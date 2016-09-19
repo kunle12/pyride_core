@@ -262,8 +262,10 @@ VideoDevice::VideoDevice() :
   dataHandler_( NULL ),
   outBuffer_( NULL ),
   outBufferSize_( 0 ),
+#ifndef JPEG62
   jpegMemBuffer_( NULL ),
   jpegMemBufferSize_( 0 ),
+#endif
   imageWidth_( 320 ),
   imageHeight_( 240 ),
   imageSize_( 320 * 240 )
