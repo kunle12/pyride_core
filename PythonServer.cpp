@@ -1190,7 +1190,7 @@ void PythonSession::handleTab()
     // a non empty string with characters other than white spaces
     std::string currentSubline = currentLine_.substr( 0, charPos_ );
     std::string lastToken;
-    std::size_t found = currentSubline.find_last_of( " ([\t" );
+    std::size_t found = currentSubline.find_last_of( " ([=|&\t" );
     if (found == std::string::npos) {
       lastToken = currentSubline;
     }
