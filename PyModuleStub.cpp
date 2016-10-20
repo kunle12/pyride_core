@@ -227,7 +227,7 @@ void PyModuleExtension::invokeCallbackHandler( PyObject * & cbObj, PyObject * ar
   }
 }
 
-//#pragma mark PyModuleExtendedCommandHandler implmentation
+//#pragma mark PyModuleExtendedCommandHandler implementation
 PyModuleExtendedCommandHandler::PyModuleExtendedCommandHandler( PyModuleExtension * pyExtModule )
 {
   pyExtModule_ = pyExtModule;
@@ -349,7 +349,7 @@ void PyModuleExtendedCommandHandler::onUserLogOff( const std::string & username 
 /**@{*/
 /*! \typedef onTimer(timer_id)
  *  \memberof ROBOT_MODEL_DOXYGEN.
- *  \brief Callback function when a timer object is fired.
+ *  \brief Callback function when a timer object (created by ROBOT_MODEL_DOXYGEN.addTimer) is fired.
  *  \param int timer_id. ID of the timer object.
  *  \return None.
  */
@@ -374,7 +374,7 @@ void PyModuleExtendedCommandHandler::onTimer( const long timerID )
 
 /*! \typedef onTimerLapsed(timer_id)
  *  \memberof ROBOT_MODEL_DOXYGEN.
- *  \brief Callback function when a timer object is fired for the last time.
+ *  \brief Callback function when a timer object (created by ROBOT_MODEL_DOXYGEN.addTimer) is fired for the last time.
  *  \param int timer_id. ID of the timer object.
  *  \return None.
  *  \note This callback function works only on timers with limited life span.
@@ -402,6 +402,15 @@ void PyModuleExtendedCommandHandler::onTimerLapsed( const long timerID )
 /** @name Miscellaneous Functions
  *
  */
+/**@{*/
+/*! \typedef onPeerMessage( sender_id, message )
+ *  \memberof ROBOT_MODEL_DOXYGEN.
+ *  \brief Callback function when a team message is received from a team member (calling ROBOT_MODEL_DOXYGEN.sendTeamMessage).
+ *  \param int sender_id. The ID of the team member who sends the message.
+ *  \param str message. Text of the message.
+ *  \return None.
+ */
+/**@}*/
 /**@{*/
 /*! \typedef onSnapshotImage(image_name)
  *  \memberof ROBOT_MODEL_DOXYGEN.
