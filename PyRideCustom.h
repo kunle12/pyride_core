@@ -38,7 +38,7 @@ typedef enum {
 } PyRideExtendedCommand;
 
 static const int NonExclusiveExtendedCommands[] = { HEAD_MOVE_TO, SPEAK,
-  LEARN_OBJECT };
+  LEARN_OBJECT, UPDATE_AUDIO_SETTINGS };
 static const int NonExcmdSize = sizeof( NonExclusiveExtendedCommands ) / sizeof( NonExclusiveExtendedCommands[0] );
 
 typedef enum {
