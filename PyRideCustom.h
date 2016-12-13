@@ -33,7 +33,8 @@ typedef enum {
   UPDATE_BODY_POSE,
   EXCLUSIVE_CTRL_REQUEST,
   EXCLUSIVE_CTRL_RELEASE,
-  EXCLUSIVE_CTRL_REJECT
+  EXCLUSIVE_CTRL_REJECT,
+  UPDATE_AUDIO_SETTINGS
 } PyRideExtendedCommand;
 
 static const int NonExclusiveExtendedCommands[] = { HEAD_MOVE_TO, SPEAK,
