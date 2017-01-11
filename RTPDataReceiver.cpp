@@ -8,8 +8,8 @@
  */
 #include <ccrtp/rtp.h>
 
-#include "RTPDataReceiver.h"
 #include "PyRideCommon.h"
+#include "RTPDataReceiver.h"
 
 namespace pyride_remote {
 using namespace std;
@@ -101,7 +101,7 @@ int RTPDataReceiver::grabData( unsigned char ** dataBuffer, bool & dataSizeChang
     // copy data
     int seqNum = adu->getSeqNum();
     if (seqNum - lastSeqNum_ > 10) {
-      WARNING_MSG( "RTPReceiver: loss of more than 10 packets\n" );
+      printf( "RTPReceiver: loss of more than 10 packets\n" );
     }
     lastSeqNum_ = seqNum;
 
