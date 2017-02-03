@@ -42,7 +42,7 @@ void RTPDataReceiver::init( int port, bool isVideoStream )
     DualRTPUDPIPv4Channel * dataChan = ((RTPSession *)streamSession_)->getDSO();
     SOCKET_T recvSock = dataChan->getRecvSocket();
   
-    int optval = 25000;
+    int optval = 1228800;
     setsockopt( recvSock, SOL_SOCKET, SO_RCVBUF, (char *)&optval, sizeof( int ) );
   }
   else {

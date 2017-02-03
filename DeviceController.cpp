@@ -281,7 +281,7 @@ VideoDevice::VideoDevice() :
   DualRTPUDPIPv4Channel * dataChan = streamSession_->getDSO();
   SOCKET_T sendSock = dataChan->getSendSocket();
   
-  int optval = 500000;
+  int optval = 1228800;
   setsockopt( sendSock, SOL_SOCKET, SO_SNDBUF, (int *)&optval, sizeof( int ) );
   //streamSession_->setSessionBandwidth( 100000 );
   streamSession_->startRunning();
