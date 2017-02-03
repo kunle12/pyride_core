@@ -33,7 +33,7 @@ ImageDataReceiver::~ImageDataReceiver()
     delete dataStream_;
 }
 
-cv::Ptr<cv::Mat> ImageDataReceiver::grabVideoStreamData()
+ImageDataPtr ImageDataReceiver::grabVideoStreamData()
 {
   unsigned char * rawData = NULL;
   unsigned char * data = NULL;
@@ -41,7 +41,7 @@ cv::Ptr<cv::Mat> ImageDataReceiver::grabVideoStreamData()
   bool dataSizeChanged = false;
 
   if (!dataStream_)
-    return cv::Ptr<cv::Mat>();
+    return ImageDataPtr();
 
   int gcount = 0;
 
@@ -55,7 +55,7 @@ cv::Ptr<cv::Mat> ImageDataReceiver::grabVideoStreamData()
   } while (dataSize == 0 && gcount < 100);
 
   if (dataSize == 0)
-    return cv::Ptr<cv::Mat>();
+    return ImageDataPtr();
 
   //printf( "Got video data %d.\n", dataSize );
 
@@ -74,7 +74,7 @@ cv::Ptr<cv::Mat> ImageDataReceiver::grabVideoStreamData()
 
   jpeg_finish_decompress( &cinfo_ );
 
-  cv::Ptr<cv::Mat> mat = new cv::Mat(cinfo_.output_height, cinfo_.output_width, CV_8UC3, imageData_ );
+  ImageDataPtr mat = new cv::Mat(cinfo_.output_height, cinfo_.output_width, CV_8UC3, imageData_ );
   cv::cvtColor( *mat, *mat, CV_RGB2BGR );
   return mat;
 }

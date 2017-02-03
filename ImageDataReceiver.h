@@ -19,18 +19,20 @@
 
 namespace pyride_remote {
 
+typedef cv::Ptr<cv::Mat> ImageDataPtr;
+
 class ImageDataReceiver
 {
 public:
   ImageDataReceiver( int port, int imageWidth, int imageHeight );
   ~ImageDataReceiver();
 
-  cv::Ptr<cv::Mat> grabVideoStreamData();
+  ImageDataPtr grabVideoStreamData();
 
 private:
   RTPDataReceiver * dataStream_;
 
-  cv::Ptr<cv::Mat> imageMat_;
+  ImageDataPtr imageMat_;
 
   // image data
   unsigned char * imageData_;
