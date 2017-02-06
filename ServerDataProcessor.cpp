@@ -281,6 +281,17 @@ bool ServerDataProcessor::dispatchVideoDataTo( int vidObjID, struct sockaddr_in 
   return true;
 }
 
+bool ServerDataProcessor::setCameraParameter( int vidObjID, int id_idx, int value )
+{
+  int vsize = activeVideoObjs_->size();
+
+  if (vidObjID < 0 || vidObjID >= vsize) {
+    return false;
+  }
+  VideoDevice * device = activeVideoObjs_->at( vidObjID );
+  return device->setCameraParameter( id_idx, value );
+}
+
 void ServerDataProcessor::onTimer( const long timerID )
 {
   for (PyRideExtendedCommandHandlerList::iterator iter = cmdHandlerList_.begin();

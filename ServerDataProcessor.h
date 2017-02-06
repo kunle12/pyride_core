@@ -71,6 +71,7 @@ public:
   int activeVideoObjectList( std::vector<std::string> & namelist );
   bool dispatchVideoDataTo( int vidObjID, struct sockaddr_in & cAddr,
                             short port, bool todispath );
+  bool setCameraParameter( int vidObjID, int id_idx, int value );
   
   void updateOperationalStatus( RobotOperationalState status, const char * optionalData = NULL,
                                   const int optionalDataLength = 0 );  
