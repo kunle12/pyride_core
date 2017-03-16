@@ -617,11 +617,13 @@ AudioDevice::~AudioDevice()
     encodedAudio_ = NULL;
   }
 
-  celt_encoder_destroy( audioEncoder_ );
-  celt_mode_destroy( celtMode_ );
+  if (celtMode_) {
+    celt_encoder_destroy( audioEncoder_ );
+    celt_mode_destroy( celtMode_ );
 
-  audioEncoder_ = NULL;
-  celtMode_ = NULL;
+    audioEncoder_ = NULL;
+    celtMode_ = NULL;
+  }
 
   nofEncodedFrames_ = 0;
 }
@@ -635,7 +637,12 @@ void AudioDevice::setProcessParameters()
 
   celtMode_ = celt_mode_create( aSettings_.sampling, PYRIDE_AUDIO_FRAME_SIZE, NULL );
 
-  audioEncoder_ = celt_encoder_create_custom( celtMode_, aSettings_.channels, NULL );
+  if (celtMode_) {
+    audioEncoder_ = celt_encoder_create_custom( celtMode_, aSettings_.channels, NULL );
+  }
+  else {
+    ERROR_MSG( "Unable to initialise custom CELT mode.\n" );
+  }
 }
 
 bool AudioDevice::start( struct sockaddr_in & cAddr, short cDataPort )
@@ -690,6 +697,9 @@ void AudioDevice::getAudioSettings( AudioSettings & settings )
 
 void AudioDevice::processAndSendAudioData( const signed short * data, const int nofSamples )
 {
+  if (!audioEncoder_)
+    return;
+
   int dataFrames = nofSamples / PYRIDE_AUDIO_FRAME_SIZE;
   if (nofEncodedFrames_ < dataFrames) {
     nofEncodedFrames_ = dataFrames;
