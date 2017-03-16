@@ -591,19 +591,15 @@ int VideoDevice::compressToHalf( const unsigned char * imageData, const int imag
   return halfSize;
 }
 
-AudioDevice::AudioDevice( int nofAudioChans ) :
-  nofAudioChans_( 1 )
+AudioDevice::AudioDevice() :
+  celtMode_( NULL ),
+  audioEncoder_( NULL )
 {
-  aSettings_.channels = nofAudioChans_;
+  aSettings_.channels = 1;
   aSettings_.sampling = PYRIDE_AUDIO_SAMPLE_RATE;
-  aSettings_.reserved = 0;
+  aSettings_.samplebytes = 2;
 
-  celtMode_ = celt_mode_create( PYRIDE_AUDIO_SAMPLE_RATE, PYRIDE_AUDIO_FRAME_SIZE, NULL );
-  
-  if (nofAudioChans > 0 && nofAudioChans < 5)
-    nofAudioChans_ = nofAudioChans;
-  
-  audioEncoder_ = celt_encoder_create_custom( celtMode_, nofAudioChans_, NULL );
+  setProcessParameters();
   
   nofEncodedFrames_ = 32;
   
@@ -624,7 +620,22 @@ AudioDevice::~AudioDevice()
   celt_encoder_destroy( audioEncoder_ );
   celt_mode_destroy( celtMode_ );
 
+  audioEncoder_ = NULL;
+  celtMode_ = NULL;
+
   nofEncodedFrames_ = 0;
+}
+
+void AudioDevice::setProcessParameters()
+{
+  if (audioEncoder_) {
+    celt_encoder_destroy( audioEncoder_ );
+    celt_mode_destroy( celtMode_ );
+  }
+
+  celtMode_ = celt_mode_create( aSettings_.sampling, PYRIDE_AUDIO_FRAME_SIZE, NULL );
+
+  audioEncoder_ = celt_encoder_create_custom( celtMode_, aSettings_.channels, NULL );
 }
 
 bool AudioDevice::start( struct sockaddr_in & cAddr, short cDataPort )
@@ -696,7 +707,7 @@ void AudioDevice::processAndSendAudioData( const signed short * data, const int 
       elen = celt_encode( audioEncoder_, audioDataPtr, PYRIDE_AUDIO_FRAME_SIZE,
                          encodedDataPtr, PYRIDE_AUDIO_BYTES_PER_PACKET );
       encodedDataPtr += elen;
-      audioDataPtr += PYRIDE_AUDIO_FRAME_SIZE * nofAudioChans_;
+      audioDataPtr += PYRIDE_AUDIO_FRAME_SIZE * aSettings_.channels;
     };
     this->dispatchData( encodedAudio_, encodedDataPtr - encodedAudio_ );
   }

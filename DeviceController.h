@@ -82,7 +82,7 @@ protected:
 class AudioDevice : public DeviceController
 {
 public:
-  AudioDevice( int nofAudioChans );
+  AudioDevice();
   virtual ~AudioDevice();
   
   virtual bool start( struct sockaddr_in & cAddr, short cDataPort = PYRIDE_VIDEO_STREAM_BASE_PORT + 2 );
@@ -96,13 +96,14 @@ protected:
   virtual bool initWorkerThread() = 0;
   virtual void finiWorkerThread() = 0;
 
+  void setProcessParameters();
+
   void processAndSendAudioData( const signed short * data, const int nofSamples );
 
 private:
   CELTMode * celtMode_;
   CELTEncoder * audioEncoder_;
   
-  int nofAudioChans_;
   int nofEncodedFrames_;
   unsigned char * encodedAudio_;
 };
@@ -142,7 +143,7 @@ protected:
   void saveToJPEG( const unsigned char * imageData, const int imageDataSize, ImageFormat format );
 
   void setProcessParameters();
-  
+
 private:  
   unsigned char * outBuffer_;
   int outBufferSize_;

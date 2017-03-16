@@ -267,7 +267,7 @@ typedef struct {
 
 typedef struct {
   char channels;
-  char reserved;
+  char samplebytes;
   short sampling;
   short dataport;
   short ctrlport;
