@@ -271,6 +271,7 @@ typedef struct {
   short sampling;
   short dataport;
   short ctrlport;
+  int reserved;
 } AudioSettings;
 
 static const int kSupportFrameRate[] = { 1, 2, 5, 10, 15, 20, 25, 30 };
