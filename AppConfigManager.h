@@ -11,7 +11,7 @@
 #define APP_CONFIG_MANAGER_H
 
 #include <openssl/sha.h>
-#ifdef ROS_BUILD
+#ifndef NAO_BUILD
 #include <tinyxml.h>
 #else
 #include <tinyxml/tinyxml.h>
