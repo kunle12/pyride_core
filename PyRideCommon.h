@@ -17,7 +17,7 @@
 
 #include "PyRideCustom.h"
 
-#define PYRIDE_PROTOCOL_VERSION  3
+#define PYRIDE_PROTOCOL_VERSION  4
 #define PYRIDE_MSG_INIT          0xAC
 #define PYRIDE_MSG_END           '#'
 #define PYRIDE_MSG_MIN_LENGTH    5
