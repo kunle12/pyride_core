@@ -43,13 +43,14 @@ static const int NonExcmdSize = sizeof( NonExclusiveExtendedCommands ) / sizeof(
 
 typedef enum {
   IDLE               = 0x0,
-  LEARNING           = 0x1,
-  LEARNING_COMPLETE  = 0x2,
-  FAULTY_HARDWARE    = 0x3,
-  CUSTOM_STATE       = 0x4,
-  EXCLUSIVE_CONTROL  = 0x5,
-  NORMAL_CONTROL     = 0x6,
-  EXCLUSIVE_CONTROL_OVERRIDE = 0x7
+  LEARNING,
+  LEARNING_COMPLETE,
+  FAULTY_HARDWARE,
+  CUSTOM_STATE,
+  EXCLUSIVE_CONTROL,
+  NORMAL_CONTROL,
+  EXCLUSIVE_CONTROL_OVERRIDE,
+  AUDIO_SETTINGS_UPDATE
 } RobotOperationalState;
 
 #endif // PyRideCustom_h_DEFINED
