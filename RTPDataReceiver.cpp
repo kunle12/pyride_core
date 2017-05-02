@@ -8,7 +8,6 @@
  */
 #include <ccrtp/rtp.h>
 
-#include "PyRideCommon.h"
 #include "RTPDataReceiver.h"
 
 namespace pyride_remote {
@@ -16,6 +15,7 @@ using namespace std;
 using namespace ost;
 
 static const int VideoStreamID = 101;
+static const char punchData[] = "xd[eaddc";
 
 RTPDataReceiver::RTPDataReceiver() :
   streamSession_( NULL ),
@@ -41,7 +41,7 @@ void RTPDataReceiver::init( int port, bool isVideoStream )
     ((RTPSession *)streamSession_)->setPayloadFormat( DynamicPayloadFormat( VideoStreamID, 90000 ) );
     DualRTPUDPIPv4Channel * dataChan = ((RTPSession *)streamSession_)->getDSO();
     SOCKET_T recvSock = dataChan->getRecvSocket();
-  
+
     int optval = 1228800;
     setsockopt( recvSock, SOL_SOCKET, SO_RCVBUF, (char *)&optval, sizeof( int ) );
   }
@@ -69,10 +69,10 @@ int RTPDataReceiver::grabData( unsigned char ** dataBuffer, bool & dataSizeChang
 {
   const AppDataUnit * adu = NULL;
   int aduSize = 0;
-  
+
   receiveTimestamp_ = ((RTPSession *)streamSession_)->getFirstTimestamp();
   adu = ((RTPSession *)streamSession_)->getData( receiveTimestamp_ );
-  
+
   // There is no packet available. This may have
   // several reasons:
   // - the thread scheduling granularity does
@@ -86,7 +86,7 @@ int RTPDataReceiver::grabData( unsigned char ** dataBuffer, bool & dataSizeChang
     delete adu;
     adu = NULL;
   }
-  
+
   if (adu) {
     aduSize = adu->getSize();
     if (dataBuffer_ == NULL) { // we have an empty buffer
@@ -118,4 +118,46 @@ int RTPDataReceiver::grabData( unsigned char ** dataBuffer, bool & dataSizeChang
   *dataBuffer = NULL;
   return 0;
 }
+
+void RTPDataReceiver::setStreamSource( const char * host, short controlPort, short dataPort )
+{
+  struct hostent * hostInfo = gethostbyname( host );
+  if (!hostInfo) { // check for IP
+#ifdef WIN_32
+    unsigned int hostIP;
+    hostIP = inet_addr( host );
+#else
+    unsigned long hostIP;
+    if (inet_pton( AF_INET, host, &hostIP ) != 1) {
+      ERROR_MSG( "RTPDataReceiver::setStreamSource: invalid hostname or address %s\n",
+                host );
+      return;
+    }
+#endif
+    hostInfo = gethostbyaddr( (char *)&hostIP, sizeof( hostIP ), AF_INET );
+    if (hostInfo == NULL) {
+      ERROR_MSG( "RTPDataReceiver::setStreamSource: unable to get host info for %s\n", host );
+      return;
+    }
+  }
+  // finally put into sockaddr_in structure
+  cSourceAddr_.sin_family = hostInfo->h_addrtype;
+  memcpy( (char *)&cSourceAddr_.sin_addr, hostInfo->h_addr, hostInfo->h_length );
+  cSourceAddr_.sin_port = controlPort;
+
+  dSourceAddr_.sin_family = hostInfo->h_addrtype;
+  memcpy( (char *)&dSourceAddr_.sin_addr, hostInfo->h_addr, hostInfo->h_length );
+  dSourceAddr_.sin_port = dataPort;
+  //DEBUG_MSG( "got control/data port %d/%d\n", ntohs( controlPort ), ntohs( dataPort ) );
+}
+
+void RTPDataReceiver::firewallPunching()
+{
+  //DEBUG_MSG( "Punching time (%d/%d)\n", ntohs(cSourceAddr_.sin_port), ntohs(dSourceAddr_.sin_port) );
+  if (sendto( dataSocket_, punchData, 8, 0, (struct sockaddr *)&dSourceAddr_, sizeof( dSourceAddr_ ) ) == -1) {
+    DEBUG_MSG( "failed to punch reason %s!\n", strerror(errno) );
+  }
+  sendto( controlSocket_, punchData, 8, 0, (struct sockaddr *)&cSourceAddr_, sizeof( cSourceAddr_ ) );
+}
+
 }

@@ -10,6 +10,10 @@
 #ifndef RTP_DATA_RECEIVER_H
 #define RTP_DATA_RECEIVER_H
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include "PyRideCommon.h"
+
 namespace pyride_remote {
 class RTPDataReceiver {
 public:
@@ -19,8 +23,19 @@ public:
 
   int grabData( unsigned char ** dataBuffer, bool & dataSizeChanged );
 
+  void setStreamSource( const char * host, short controlPort, short dataPort );
+
+  void firewallPunching();
+
 private:
   void * streamSession_;
+
+  SOCKET_T controlSocket_;
+  SOCKET_T dataSocket_;
+
+  struct sockaddr_in  cSourceAddr_;
+  struct sockaddr_in  dSourceAddr_;
+
   unsigned int receiveTimestamp_;
   unsigned int lastSeqNum_;
   unsigned char * dataBuffer_;
