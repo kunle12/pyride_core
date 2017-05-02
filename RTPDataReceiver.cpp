@@ -88,7 +88,7 @@ int RTPDataReceiver::grabData( unsigned char ** dataBuffer, bool & dataSizeChang
   }
 
   if (adu) {
-    aduSize = adu->getSize();
+    aduSize = (int)adu->getSize();
     if (dataBuffer_ == NULL) { // we have an empty buffer
       dataBufferSize_ = aduSize * 2;
       dataBuffer_ = new unsigned char[dataBufferSize_];
