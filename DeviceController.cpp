@@ -593,7 +593,8 @@ int VideoDevice::compressToHalf( const unsigned char * imageData, const int imag
 
 AudioDevice::AudioDevice() :
   celtMode_( NULL ),
-  audioEncoder_( NULL )
+  audioEncoder_( NULL ),
+  audioFrameSize_( PYRIDE_AUDIO_FRAME_SIZE )
 {
   aSettings_.channels = 1;
   aSettings_.sampling = PYRIDE_AUDIO_SAMPLE_RATE;
@@ -636,11 +637,10 @@ bool AudioDevice::setProcessParameters()
     audioEncoder_ = NULL;
   }
 
-  int frame_size = PYRIDE_AUDIO_FRAME_SIZE;
   if (aSettings_.sampling == 8000)
-    frame_size = PYRIDE_AUDIO_FRAME_SIZE / 2;
+    audioFrameSize_ = PYRIDE_AUDIO_FRAME_SIZE / 2;
 
-  celtMode_ = celt_mode_create( aSettings_.sampling, frame_size, NULL );
+  celtMode_ = celt_mode_create( aSettings_.sampling, audioFrameSize_, NULL );
 
   if (celtMode_) {
     audioEncoder_ = celt_encoder_create_custom( celtMode_, aSettings_.channels, NULL );
@@ -705,7 +705,7 @@ void AudioDevice::processAndSendAudioData( const signed short * data, const int 
   if (!audioEncoder_)
     return;
 
-  int dataFrames = nofSamples / PYRIDE_AUDIO_FRAME_SIZE;
+  int dataFrames = nofSamples / audioFrameSize_;
   if (nofEncodedFrames_ < dataFrames) {
     nofEncodedFrames_ = dataFrames;
     delete [] encodedAudio_;
@@ -719,10 +719,10 @@ void AudioDevice::processAndSendAudioData( const signed short * data, const int 
   
   if (dataFrames > 0) {
     for (int i = 0;i < dataFrames; i++) {
-      elen = celt_encode( audioEncoder_, audioDataPtr, PYRIDE_AUDIO_FRAME_SIZE,
+      elen = celt_encode( audioEncoder_, audioDataPtr, audioFrameSize_,
                          encodedDataPtr, PYRIDE_AUDIO_BYTES_PER_PACKET );
       encodedDataPtr += elen;
-      audioDataPtr += PYRIDE_AUDIO_FRAME_SIZE * aSettings_.channels;
+      audioDataPtr += audioFrameSize_ * aSettings_.channels;
     };
     this->dispatchData( encodedAudio_, encodedDataPtr - encodedAudio_ );
   }

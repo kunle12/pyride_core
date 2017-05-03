@@ -105,6 +105,7 @@ private:
   CELTEncoder * audioEncoder_;
   
   int nofEncodedFrames_;
+  int audioFrameSize_;
   unsigned char * encodedAudio_;
 };
 
