@@ -628,21 +628,26 @@ AudioDevice::~AudioDevice()
   nofEncodedFrames_ = 0;
 }
 
-void AudioDevice::setProcessParameters()
+bool AudioDevice::setProcessParameters()
 {
   if (audioEncoder_) {
     celt_encoder_destroy( audioEncoder_ );
     celt_mode_destroy( celtMode_ );
+    audioEncoder_ = NULL;
   }
 
-  celtMode_ = celt_mode_create( aSettings_.sampling, PYRIDE_AUDIO_FRAME_SIZE, NULL );
+  int frame_size = PYRIDE_AUDIO_FRAME_SIZE;
+  if (aSettings_.sampling == 8000)
+    frame_size = PYRIDE_AUDIO_FRAME_SIZE / 2;
+
+  celtMode_ = celt_mode_create( aSettings_.sampling, frame_size, NULL );
 
   if (celtMode_) {
     audioEncoder_ = celt_encoder_create_custom( celtMode_, aSettings_.channels, NULL );
+    return (audioEncoder_ != NULL);
   }
-  else {
-    ERROR_MSG( "Unable to initialise custom CELT mode.\n" );
-  }
+  ERROR_MSG( "Unable to initialise custom CELT mode.\n" );
+  return false;
 }
 
 bool AudioDevice::start( struct sockaddr_in & cAddr, short cDataPort )
