@@ -348,7 +348,7 @@ void VideoDevice::setProcessParameters()
   jpeg_set_quality( &cinfo_, kCompressionRate[vSettings_.resolution], TRUE );
 }
 
-bool VideoDevice::start( struct sockaddr_in & cAddr, short cDataPort )
+bool VideoDevice::start( struct sockaddr_in & cAddr, unsigned short cDataPort )
 {
   bool retVal = false;
   
@@ -373,7 +373,7 @@ bool VideoDevice::start( struct sockaddr_in & cAddr, short cDataPort )
   return retVal;
 }
 
-bool VideoDevice::stop( struct sockaddr_in & cAddr, short cDataPort )
+bool VideoDevice::stop( struct sockaddr_in & cAddr, unsigned short cDataPort )
 {
   bool retVal = false;
   
@@ -645,7 +645,7 @@ void AudioDevice::setProcessParameters()
   }
 }
 
-bool AudioDevice::start( struct sockaddr_in & cAddr, short cDataPort )
+bool AudioDevice::start( struct sockaddr_in & cAddr, unsigned short cDataPort )
 {
   bool retVal = false;
   
@@ -670,7 +670,7 @@ bool AudioDevice::start( struct sockaddr_in & cAddr, short cDataPort )
   return retVal;
 }
 
-bool AudioDevice::stop( struct sockaddr_in & cAddr, short cDataPort )
+bool AudioDevice::stop( struct sockaddr_in & cAddr, unsigned short cDataPort )
 {
   bool retVal = false;
   
