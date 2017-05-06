@@ -96,7 +96,7 @@ protected:
   virtual bool initWorkerThread() = 0;
   virtual void finiWorkerThread() = 0;
 
-  void setProcessParameters();
+  bool setProcessParameters();
 
   void processAndSendAudioData( const signed short * data, const int nofSamples );
 
@@ -105,6 +105,7 @@ private:
   CELTEncoder * audioEncoder_;
   
   int nofEncodedFrames_;
+  int audioFrameSize_;
   unsigned char * encodedAudio_;
 };
 
