@@ -123,7 +123,7 @@ void RTPDataReceiver::setStreamSource( const char * host, short controlPort, sho
 {
   struct hostent * hostInfo = gethostbyname( host );
   if (!hostInfo) { // check for IP
-#ifdef WIN_32
+#ifdef WIN32
     unsigned int hostIP;
     hostIP = inet_addr( host );
 #else

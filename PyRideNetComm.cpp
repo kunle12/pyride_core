@@ -6,7 +6,7 @@
 //  Copyright 2010 GalaxyNetwork. All rights reserved.
 //
 #ifdef WIN32
-#pragma warning( disable: 4068 4018 )
+#pragma warning( disable: 4068 4018 4244 )
 #endif
 
 #ifndef WIN32
@@ -20,9 +20,8 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <sys/time.h>
-#define local_max( a, b ) (a > b) ? a : b
-
 #endif
+#define local_max( a, b ) (a > b) ? a : b
 
 #include <openssl/sha.h>
 #include <math.h>
@@ -358,11 +357,11 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
 #endif
       if (readLen <= 0) {
         if (readLen == 0) {
-          INFO_MSG( "Socket connection %d closed.\n", fd );
+          INFO_MSG( "Socket connection %d closed.\n", (int)fd );
         }
         else {
           ERROR_MSG( "PyRideNetComm::continuousProcessing: "
-                    "error reading data stream on %d error = %d.\n", fd, errno );
+                    "error reading data stream on %d error = %d.\n", (int)fd, errno );
         }
         disconnectClient( clientPtr );
       }
@@ -373,7 +372,7 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
           if (*dataPtr == PYRIDE_MSG_INIT && clientPtr->dataInfo.expectedDataLength == 0) { // new message
             if (readLen < 4) {
               ERROR_MSG( "PyRideNetComm::continuousProcessing: "
-                        "invalid data packet in stream on %d (too small).\n", fd );
+                        "invalid data packet in stream on %d (too small).\n", (int)fd );
               break;
             }
             dataPtr++;
@@ -382,7 +381,7 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
             readLen -= 3;
             if (dataCount < 0 || dataCount > PYRIDE_MSG_BUFFER_SIZE) { // encryption buffer size
               ERROR_MSG( "PyRideNetComm::continuousProcessing: "
-                        "invalid data size in stream on %d.\n", fd );
+                        "invalid data size in stream on %d.\n", (int)fd );
               break;
             }
             else if (dataCount > (readLen - 1)) { // the message needs multiple reads
@@ -398,7 +397,7 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
             }
             else {
               ERROR_MSG( "PyRideNetComm::continuousProcessing: "
-                        "invalid data packet in stream on %d.\n", fd );
+                        "invalid data packet in stream on %d.\n", (int)fd );
               break;
             }
           }
@@ -423,7 +422,7 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
             }
             else {
               ERROR_MSG( "PyRideNetComm::continuousProcessing: "
-                        "unexpected data fragment in data stream on %d.\n", fd );
+                        "unexpected data fragment in data stream on %d.\n", (int)fd );
               clientPtr->dataInfo.bufferedDataLength = 0;
               clientPtr->dataInfo.expectedDataLength = 0;
               break;
@@ -431,7 +430,7 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
           }
           else {
             ERROR_MSG( "PyRideNetComm::continuousProcessing: "
-                      "invalid data stream on %d.\n", fd );
+                      "invalid data stream on %d.\n", (int)fd );
             clientPtr->dataInfo.bufferedDataLength = 0;
             clientPtr->dataInfo.expectedDataLength = 0;
             break;
@@ -1514,7 +1513,7 @@ void PyRideNetComm::clientDataSend( const int command, const int subcommand,
 
     if (client) {
 #ifdef WIN32
-      send( client->fd, dispatchDataBuffer_, outputLength, 0 );
+      send( client->fd, (char*)dispatchDataBuffer_, outputLength, 0 );
 #else
       //DEBUG_MSG( "sending total packet size %d, data count %d\n", outputLength, opl );
       write( client->fd, dispatchDataBuffer_, outputLength );
@@ -1525,7 +1524,7 @@ void PyRideNetComm::clientDataSend( const int command, const int subcommand,
       while (cPtr) {
         if (cPtr->fd != INVALID_SOCKET && (forceAll || cPtr->pushData)) {
 #ifdef WIN32
-          send( cPtr->fd, dispatchDataBuffer_, outputLength, 0 );
+          send( cPtr->fd, (char*)dispatchDataBuffer_, outputLength, 0 );
 #else
           write( cPtr->fd, dispatchDataBuffer_, outputLength );
 #endif

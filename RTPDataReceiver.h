@@ -10,8 +10,15 @@
 #ifndef RTP_DATA_RECEIVER_H
 #define RTP_DATA_RECEIVER_H
 
+#ifdef WIN32
+#include <winbase.h>
+#include <process.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#endif
 #include "PyRideCommon.h"
 
 namespace pyride_remote {
