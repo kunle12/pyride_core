@@ -78,10 +78,11 @@ public:
   TeamColour teamColour() { return (TeamColour)(clientID_ & 0xf); }
   int teamMemberID() { return (clientID_ >> 4); }
   const RobotInfo & defaultRobotInfo() { return defaultRobotInfo_; }
-  void setDefaultRobotInfo( const RobotType rtype, const RobotPose & pose )
+  void setDefaultRobotInfo( const RobotType rtype, const RobotPose & pose, const RobotCapability & capabilities )
   {
     defaultRobotInfo_.type = rtype;
     defaultRobotInfo_.pose = pose;
+    defaultRobotInfo_.capabilities = capabilities;
   }
 
   long addTimer( float initialTime, long repeats = 0, float interval = 1.0 );

@@ -34,11 +34,13 @@ typedef enum {
   EXCLUSIVE_CTRL_REQUEST,
   EXCLUSIVE_CTRL_RELEASE,
   EXCLUSIVE_CTRL_REJECT,
-  UPDATE_AUDIO_SETTINGS
+  UPDATE_AUDIO_SETTINGS,
+  AUDIO_FEEDBACK_ON,
+  VIDEO_FEEDBACK_ON
 } PyRideExtendedCommand;
 
 static const int NonExclusiveExtendedCommands[] = { HEAD_MOVE_TO, SPEAK,
-  LEARN_OBJECT, UPDATE_AUDIO_SETTINGS };
+  LEARN_OBJECT, UPDATE_AUDIO_SETTINGS, AUDIO_FEEDBACK_ON };
 static const int NonExcmdSize = sizeof( NonExclusiveExtendedCommands ) / sizeof( NonExclusiveExtendedCommands[0] );
 
 typedef enum {

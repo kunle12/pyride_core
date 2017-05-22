@@ -17,7 +17,7 @@
 
 #include "PyRideCustom.h"
 
-#define PYRIDE_PROTOCOL_VERSION  4
+#define PYRIDE_PROTOCOL_VERSION  5
 #define PYRIDE_MSG_INIT          0xAC
 #define PYRIDE_MSG_END           '#'
 #define PYRIDE_MSG_MIN_LENGTH    5
@@ -28,13 +28,12 @@
 #define PYRIDE_VIDEO_STREAM_BASE_PORT      35210 //34529
 #define PYRIDE_DEFAULT_BUFFER_SIZE         4096
 #define PYRIDE_MSG_BUFFER_SIZE             10240
-#define PYRIDE_AUDIO_SAMPLE_RATE           48000
+#define PYRIDE_AUDIO_SAMPLE_RATE           16000
 #define PYRIDE_AUDIO_FRAME_SIZE            256
 #define PYRIDE_AUDIO_BYTES_PER_PACKET      46
 #define PYRIDE_AUDIO_BITS_PER_SAMPLE       16
 #define PYRIDE_AUDIO_BYTES_PER_SAMPLE      (PYRIDE_AUDIO_BITS_PER_SAMPLE/8)
 #define PYRIDE_AUDIO_PLAY_BUFFERS          2
-
 
 #if defined( IOS_BUILD )
 #define PYRIDE_LOGGING_INIT
@@ -224,6 +223,13 @@ typedef enum {
   REEM       = 0x6
 } RobotType;
 
+typedef enum {
+  MOBILITY      = 0x1,
+  MANIPULATION  = 0x2,
+  AUDIO_FEEBACK = 0x4,
+  VIDEO_FEEBACK = 0x8
+} RobotCapability;
+
 typedef struct {
   float x;
   float y;
@@ -233,6 +239,7 @@ typedef struct {
 typedef struct {
   RobotType type;
   RobotPose pose;
+  RobotCapability capabilities;
   RobotOperationalState status;
   int nofcams;
   int nofaudios;

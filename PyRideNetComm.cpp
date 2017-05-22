@@ -1186,6 +1186,7 @@ void PyRideNetComm::declareRobot( const RobotInfo * robotInfo, ClientItem * clie
   rinfo.pose.y = robotInfo->pose.y;
   rinfo.pose.theta = robotInfo->pose.theta;
   rinfo.type = robotInfo->type;
+  rinfo.capabilities = roboInfo->capabilities;
   rinfo.status = exclusiveCtrlClient_ ? EXCLUSIVE_CONTROL : NORMAL_CONTROL;
   rinfo.nofcams = 0;
   rinfo.nofaudios = 0;
