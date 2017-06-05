@@ -307,7 +307,7 @@ bool PyModuleExtendedCommandHandler::onUserLogOn( const std::string & username )
 
   pyExtModule_->invokeCallback( "onUserLogOn", arg, result );
   if (result && PyBool_Check( result )) {
-	retVal = PyObject_IsTrue( result );
+    retVal = PyObject_IsTrue( result );
   }
   Py_DECREF( arg );
   Py_XDECREF( result );
