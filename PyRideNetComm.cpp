@@ -1965,7 +1965,7 @@ void PyRideNetComm::checkTimers()
       if (timerPtr->isExecuting) {
         ERROR_MSG( "Timer %u is still executing while it is called again! Skip\n", (int)timerPtr->tID );
       }
-      else if (timerPtr->remainCount > 0) {
+      else if (timerPtr->remainCount > 0 || timerPtr->remainCount == -1) {
         timerExecuteData * ted = new timerExecuteData;
         ted->timerObj = timerPtr;
         ted->mainObj = this;
