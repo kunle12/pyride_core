@@ -147,22 +147,24 @@ void PyModuleExtension::setTeamColour( TeamColour teamColour )
   clientID_ = (clientID_ & 0xf0) | (teamColour & 0xf);
 }
 
-void PyModuleExtension::invokeCallback( const char * fnName, PyObject * arg )
+bool PyModuleExtension::invokeCallback( const char * fnName, PyObject * arg )
 {
+  bool retval = false;
+
   if (!pPyModule_)
-    return;
+    return retval;
   
   //DEBUG_MSG( "Attempt get callback function %s\n", fnName );
-  
   PyObject * callbackFn = PyObject_GetAttrString( pPyModule_, const_cast<char *>(fnName) );
   if (!callbackFn) {
     PyErr_Clear();
-    return;
+    return retval;
   }
   else if (!PyCallable_Check( callbackFn )) {
     PyErr_Format( PyExc_TypeError, "%s is not callable object", fnName );
   }
   else {
+    retval = true; // as long as there is a function link to the callback, we consider it is rightly consumed.
     PyObject * pResult = PyObject_CallObject( callbackFn, arg );
     if (PyErr_Occurred()) {
       PyErr_Print();
@@ -170,25 +172,29 @@ void PyModuleExtension::invokeCallback( const char * fnName, PyObject * arg )
     Py_XDECREF( pResult );
   }
   Py_DECREF( callbackFn );
+  return retval;
 }
 
-void PyModuleExtension::invokeCallback( const char * fnName, PyObject * arg, PyObject * & result )
+bool PyModuleExtension::invokeCallback( const char * fnName, PyObject * arg, PyObject * & result )
 {
+  bool retval = false;
   result = NULL;
+
   if (!pPyModule_)
-    return;
+    return retval;
 
   //DEBUG_MSG( "Attempt get callback function %s\n", fnName );
 
   PyObject * callbackFn = PyObject_GetAttrString( pPyModule_, const_cast<char *>(fnName) );
   if (!callbackFn) {
     PyErr_Clear();
-    return;
+    return retval;
   }
   else if (!PyCallable_Check( callbackFn )) {
     PyErr_Format( PyExc_TypeError, "%s is not callable object", fnName );
   }
   else {
+    retval = true;
     PyObject * pResult = PyObject_CallObject( callbackFn, arg );
     if (PyErr_Occurred()) {
       PyErr_Print();
@@ -198,6 +204,7 @@ void PyModuleExtension::invokeCallback( const char * fnName, PyObject * arg, PyO
     }
   }
   Py_DECREF( callbackFn );
+  return retval;
 }
 
 // internal helper functions
@@ -245,15 +252,19 @@ PyModuleExtendedCommandHandler::PyModuleExtendedCommandHandler( PyModuleExtensio
  *  \note The remote client must take the exclusive control of the robot before
  *   its commands can trigger this callback function.
  */
-bool PyModuleExtendedCommandHandler::executeRemoteCommand( PyRideExtendedCommand command,
+bool PyModuleExtendedCommandHandler::executeRemoteCommand( PyRideExtendedCommand command, int & retVal,
                                                        const unsigned char * optionalData,
                                                        const int optionalDataLength )
 {
+  bool success = false;
+  retVal = 0;
+
   if (!pyExtModule_)
-    return false;
+    return success;
   
   PyObject * arg = NULL;
-  
+  PyObject * result = NULL;
+
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   
@@ -264,12 +275,27 @@ bool PyModuleExtendedCommandHandler::executeRemoteCommand( PyRideExtendedCommand
   else {
     arg = Py_BuildValue( "(is)", (int) command, "" );
   }
-  pyExtModule_->invokeCallback( "onRemoteCommand", arg );
+
+  success = pyExtModule_->invokeCallback( "onRemoteCommand", arg, result );
+
+  if (result) {
+    if (PyBool_Check( result )) {
+      retVal = PyObject_IsTrue( result );
+    }
+    else if (PyLong_Check( result )) {
+      retVal = PyLong_AsLong( result );
+    }
+    else {
+      PyErr_Format( PyExc_TypeError,
+          "onRemoteCommand callback return value should be an integer or boolean" );
+    }
+  }
   Py_DECREF( arg );
+  Py_XDECREF( result );
   
   PyGILState_Release( gstate );
   
-  return true;
+  return success;
 }
 
 void PyModuleExtendedCommandHandler::cancelCurrentOperation()

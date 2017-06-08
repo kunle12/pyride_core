@@ -86,7 +86,7 @@ protected:
   
   virtual void onTelemetryStreamControl( bool isStart ) {};
 
-  virtual bool executeRemoteCommand( const unsigned char * commandData, const int dataLength ) = 0;
+  virtual bool executeRemoteCommand( const unsigned char * commandData, const int dataLength, int & retVal ) = 0;
   virtual void cancelCurrentOperation() = 0;
   virtual bool onUserLogOn( const unsigned char * authCode, SOCKET_T fd, struct sockaddr_in & addr ) { return false; }
   virtual void onUserLogOff( SOCKET_T fd ) {}

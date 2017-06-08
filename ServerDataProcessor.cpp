@@ -225,7 +225,7 @@ void ServerDataProcessor::delAllTimers()
 }
 
 bool ServerDataProcessor::executeRemoteCommand( const unsigned char * commandData,
-                                                   const int dataLength )
+                                                   const int dataLength, int & retVal )
 {
   if (cmdHandlerList_.empty())
     return false;
@@ -236,11 +236,11 @@ bool ServerDataProcessor::executeRemoteCommand( const unsigned char * commandDat
   for (PyRideExtendedCommandHandlerList::iterator iter = cmdHandlerList_.begin();
        iter != cmdHandlerList_.end(); iter++)
   {
-    if ((*iter)->executeRemoteCommand( command, data, dataLength - 1 )) { // data has already been consumed, the handler does not wish other handlers to process the data again.
-      break;
+    if ((*iter)->executeRemoteCommand( command, retVal, data, dataLength - 1 )) { // data has already been consumed, the handler does not wish other handlers to process the data again.
+      return true;
     }
   }
-  return true;
+  return false;
 }
 
 void ServerDataProcessor::cancelCurrentOperation()

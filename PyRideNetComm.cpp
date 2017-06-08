@@ -1123,7 +1123,7 @@ void PyRideNetComm::processRobotResponse( ClientItem * client, int subcommand, c
       }
       break;
     default:
-      ERROR_MSG( "PyRide::processRobotResponse unknow subcommand %d\n", subcommand );
+      ERROR_MSG( "PyRIDE::processRobotResponse unknown subcommand %d\n", subcommand );
       break;
   }
 }
@@ -1327,7 +1327,8 @@ void PyRideNetComm::processConsoleCommand( ClientItem * client, int subcommand, 
     case CUSTOM_COMMAND:
       if (dataLen >= 1 && pDataHandler_) {
         // more hacks to enable exclusive robot control
-        unsigned char retData[2];
+        unsigned char retData[2+sizeof(int)]; // cmd + success + return value (int)
+        int * retval = (int *)(retData + 2);
         PyRideExtendedCommand cmd = (PyRideExtendedCommand) commandData[0];
         retData[0] = cmd;
         if (cmd == EXCLUSIVE_CTRL_REQUEST) {
@@ -1357,12 +1358,12 @@ void PyRideNetComm::processConsoleCommand( ClientItem * client, int subcommand, 
           }
         }
         else if (isNonExclusiveCommand( cmd ) || exclusiveCtrlClient_ == client) {
-          retData[1] = (unsigned char)pDataHandler_->executeRemoteCommand( commandData, dataLen );
+          retData[1] = (unsigned char)pDataHandler_->executeRemoteCommand( commandData, dataLen, *retval );
         }
         else {
           retData[1] = EXCLUSIVE_CTRL_REJECT;
         }
-        clientDataSend( CLIENT_RESPONSE, subcommand, (unsigned char *)&retData, 2, client );
+        clientDataSend( CLIENT_RESPONSE, subcommand, (unsigned char *)&retData, 2+sizeof(int), client );
         return;
       }
       break;

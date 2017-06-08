@@ -44,8 +44,8 @@ public:
   std::string & name() { return name_; }
 
   PyObject * init( PyOutputWriter * pow );
-  void invokeCallback( const char * fnName, PyObject * arg );
-  void invokeCallback( const char * fnName, PyObject * arg, PyObject * & result );
+  bool invokeCallback( const char * fnName, PyObject * arg );
+  bool invokeCallback( const char * fnName, PyObject * arg, PyObject * & result );
   void write( const char * str );
   
   void sendTeamMessage( const char * mesg );
@@ -74,7 +74,7 @@ public:
   PyModuleExtendedCommandHandler( PyModuleExtension * pyExtModule = NULL );
   
 private:
-  bool executeRemoteCommand( PyRideExtendedCommand command,
+  bool executeRemoteCommand( PyRideExtendedCommand command, int & retVal,
                             const unsigned char * optionalData = NULL,
                             const int optionalDataLength = 0 );
   void cancelCurrentOperation();

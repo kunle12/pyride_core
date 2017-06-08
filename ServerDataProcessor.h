@@ -27,7 +27,7 @@ class ServerDataProcessor;
 class PyRideExtendedCommandHandler : public VideoDeviceDataHandler
 {
 protected:
-  virtual bool executeRemoteCommand( PyRideExtendedCommand command, 
+  virtual bool executeRemoteCommand( PyRideExtendedCommand command, int & retVal,
                                     const unsigned char * optinalData = NULL,
                                     const int optionalDataLength = 0 ) = 0;
   virtual void cancelCurrentOperation() = 0;
@@ -104,7 +104,7 @@ private:
   ServerDataProcessor();
 
   // RobotDataHandler
-  bool executeRemoteCommand( const unsigned char * commandData, const int dataLength );
+  bool executeRemoteCommand( const unsigned char * commandData, const int dataLength, int & retVal );
   void cancelCurrentOperation();
   bool onUserLogOn( const unsigned char * authCode, SOCKET_T fd, struct sockaddr_in & addr );
   void onUserLogOff( SOCKET_T fd );
