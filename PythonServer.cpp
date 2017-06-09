@@ -245,6 +245,15 @@ bool PythonServer::initPyInterpreter()
   sysPathStr.replace( 0, delpos, scriptPath );
   sysPathStr += packagePath + "/dist-packages";
   sysPathStr += packagePath + "/site-packages";
+
+  char * evnhome = getenv( "HOME" );
+  if (evnhome) {
+    std::string localPackagePath = ":";
+    localPackagePath += evnhome; localPackagePath += "/.local/lib/python";
+    localPackagePath += versionStr.substr( 0, versionStr.find_last_of( '.' ) );
+    sysPathStr += localPackagePath + "/site-packages";
+  }
+
   PySys_SetPath( (char*)sysPathStr.c_str() );
 
   pSysModule_ = PyImport_ImportModule( "sys" );
