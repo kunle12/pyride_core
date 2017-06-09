@@ -42,7 +42,8 @@ extern "C" {
   void setImageFormat( const char cID, ImageFormat format );
   void switchCamera( const char cID, const char vID );
   void issueExtendedCommand( const char cID, const PyRideExtendedCommand command,
-                            const unsigned char * optionalData , const int optionalDataLength );
+                            const unsigned char * optionalData, const int optionalDataLength );
+  bool findClientAddress( const char cID, struct sockaddr_in * cAddr );
 };
 
 //using namespace std;
@@ -104,6 +105,7 @@ public:
                                                         const unsigned char *, const int ) );
   void setImageFormat( const char cID, ImageFormat format );
   void switchCamera( const char cID, const char vID );
+  bool findClientAddress( const char cID, struct sockaddr_in & cAddr );
 
 private:
   PyRideNetComm * pNetComm_;
@@ -172,7 +174,8 @@ void cancelCurrentOperation( const char cID );
 void setImageFormat( const char cID, ImageFormat format );
 void switchCamera( const char cID, const char vID );
 void issueExtendedCommand( const char cID, const PyRideExtendedCommand command,
-                          const unsigned char * optionalData , const int optionalDataLength );
+                          const unsigned char * optionalData, const int optionalDataLength );
+bool findClientAddress( const char cID, struct sockaddr_in * cAddr );
 #endif // __cplusplus
 
 #endif  // ConsoleDataProcessor_h_DEFINED

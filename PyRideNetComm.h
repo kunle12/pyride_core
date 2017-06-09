@@ -146,6 +146,9 @@ public:
   void disconnectClientWithFD( SOCKET_T fd );
   bool getIDFromIP( int & addr );
   bool getMyIPAddress( int & addr );
+  
+  bool findClientAddress( const char cID, struct sockaddr_in & cAddr );
+  
   long addTimer( float initialTime, long repeats = 0, float interval = 1.0 );
   void delTimer( long tID );
   bool isTimerRunning( long tID );
