@@ -14,7 +14,9 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <string.h>
-
+#ifndef WIN32
+#include <sys/time.h>
+#endif
 #include "PyRideCustom.h"
 
 #define PYRIDE_PROTOCOL_VERSION  5
@@ -117,7 +119,9 @@ s_pyridelog = fopen( logFileName, "a" )
 #else
 #define DEBUG_MSG( MSG... ) \
 if (s_pyridelog) { \
-  fprintf( s_pyridelog, "DEBUG: " ); \
+  struct timeval now; \
+  gettimeofday( &now, NULL ); \
+  fprintf( s_pyridelog, "[%ld%c%ld] DEBUG: ", (long)now.tv_sec, 46, (long)now.tv_usec ); \
   fprintf( s_pyridelog, MSG ); \
   fflush( s_pyridelog ); \
 }
@@ -125,20 +129,26 @@ if (s_pyridelog) { \
 
 #define INFO_MSG( MSG... ) \
 if (s_pyridelog) { \
-  fprintf( s_pyridelog, "INFO: " ); \
+  struct timeval now; \
+  gettimeofday( &now, NULL ); \
+  fprintf( s_pyridelog, "[%ld%c%ld] INFO: ", (long)now.tv_sec, 46, (long)now.tv_usec ); \
   fprintf( s_pyridelog, MSG ); \
   fflush( s_pyridelog ); \
 }
 
 #define WARNING_MSG( MSG... ) \
 if (s_pyridelog) { \
-  fprintf( s_pyridelog, "WARNING: " ); \
+  struct timeval now; \
+  gettimeofday( &now, NULL ); \
+  fprintf( s_pyridelog, "[%ld%c%ld] WARNING: ", (long)now.tv_sec, 46, (long)now.tv_usec ); \
   fprintf( s_pyridelog, MSG ); \
   fflush( s_pyridelog ); \
 }
 #define ERROR_MSG( MSG... ) \
 if (s_pyridelog) { \
-  fprintf( s_pyridelog, "ERROR: " ); \
+  struct timeval now; \
+  gettimeofday( &now, NULL ); \
+  fprintf( s_pyridelog, "[%ld%c%ld] ERROR: ", (long)now.tv_sec, 46, (long)now.tv_usec ); \
   fprintf( s_pyridelog, MSG ); \
   fflush( s_pyridelog ); \
 }

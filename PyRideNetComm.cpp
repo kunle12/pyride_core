@@ -1838,13 +1838,12 @@ void PyRideNetComm::delTimer( long tID )
   TimerObj * prevTimerPtr = timerPtr;
   while (timerPtr) {
     if (timerPtr->tID == tID) {
-      if (timerPtr->isExecuting) { // allow the timer finishing its execution
-#ifdef WIN32
-      TerminateThread( timerPtr->timerThread, 1 );
-      CloseHandle( timerPtr->timerThread );
-#else
-        pthread_cancel( timerPtr->timerThread );
-#endif
+      while (timerPtr->isExecuting) {
+        // allow the timer finishing its execution
+        // If the execution does not finish, we goes into an infinite loop,
+        // let the programmer to discover the fault from the log file.
+        ERROR_MSG( "Unable to delete timer %ld: Timer thread is currently executing.", tID );
+        usleep( 10000 );
       }
       if (timerPtr == timerList_) {
         timerList_ = timerPtr->pNext;
@@ -1917,7 +1916,9 @@ void PyRideNetComm::delAllTimers()
   while (timerPtr) {
     tmpPtr = timerPtr;
     timerPtr = timerPtr->pNext;
-    if (tmpPtr->isExecuting) { // allow the timer finishing its execution
+    if (tmpPtr->isExecuting) {
+      // force kill the thread here. possible memory leaks,
+      // deadlock in Python callbacks.
 #ifdef WIN32
       TerminateThread( tmpPtr->timerThread, 1 );
       CloseHandle( tmpPtr->timerThread );
