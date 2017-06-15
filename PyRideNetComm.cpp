@@ -1588,6 +1588,16 @@ PyRideNetComm::ClientItem * PyRideNetComm::findClientFromClientList( const char 
   return found;
 }
 
+bool PyRideNetComm::findClientAddress( const char cID, struct sockaddr_in & cAddr )
+{
+  ClientItem * found = findClientFromClientList( cID );
+  if (found) {
+    memcpy( (void*)&cAddr, (void*)&found->addr, sizeof(struct sockaddr_in ) );
+    return true;
+  }
+  return false;
+}
+
 PyRideNetComm::ClientItem * PyRideNetComm::addFdToClientList( const SOCKET_T & fd, struct sockaddr_in & cAddr )
 {
   ClientItem * newClient = new ClientItem;

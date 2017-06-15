@@ -106,6 +106,11 @@ void issueExtendedCommand( const char cID, const PyRideExtendedCommand command,
   ConsoleDataProcessor::instance()->issueExtendedCommand( cID, command, optionalData, optionalDataLength );
 }
 
+bool findClientAddress( const char cID, struct sockaddr_in * cAddr )
+{
+  return ConsoleDataProcessor::instance()->findClientAddress( cID, *cAddr );
+}
+
 ConsoleDataProcessor * ConsoleDataProcessor::s_pConsoleDataProcessor = NULL;
 
 ConsoleDataProcessor * ConsoleDataProcessor::instance()
@@ -401,4 +406,12 @@ void ConsoleDataProcessor::switchCamera( const char cID, const char vID )
   if (pNetComm_) {
     pNetComm_->switchCamera( cID, vID );
   }
+}
+
+bool ConsoleDataProcessor::findClientAddress( const char cID, struct sockaddr_in & cAddr )
+{
+  if (pNetComm_) {
+    return pNetComm_->findClientAddress( cID, cAddr );
+  }
+  return false;
 }
