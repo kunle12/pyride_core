@@ -7,6 +7,7 @@
  *
  */
 #include <ccrtp/rtp.h>
+#include <errno.h>
 
 #include "RTPDataReceiver.h"
 
