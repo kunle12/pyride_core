@@ -1331,6 +1331,7 @@ void PyRideNetComm::processConsoleCommand( ClientItem * client, int subcommand, 
         int * retval = (int *)(retData + 2);
         PyRideExtendedCommand cmd = (PyRideExtendedCommand) commandData[0];
         retData[0] = cmd;
+        *retVal = 0;
         if (cmd == EXCLUSIVE_CTRL_REQUEST) {
           if (exclusiveCtrlClient_) {
             retData[1] = EXCLUSIVE_CTRL_REJECT;
@@ -1338,7 +1339,7 @@ void PyRideNetComm::processConsoleCommand( ClientItem * client, int subcommand, 
           else {
             exclusiveCtrlClient_ = client;
             retData[1] = 1;
-            clientDataSend( CLIENT_RESPONSE, subcommand, (unsigned char *)&retData, 2, client );
+            clientDataSend( CLIENT_RESPONSE, subcommand, (unsigned char *)&retData, 2+sizeof(int), client );
             unsigned char data = EXCLUSIVE_CONTROL;
             this->clientDataSend( ROBOT_STATUS, 0, &data, 1, NULL, false, true );
             return;
