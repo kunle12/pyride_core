@@ -45,6 +45,7 @@ void RTPDataReceiver::init( int port, bool isVideoStream )
 
     int optval = 1228800;
     setsockopt( recvSock, SOL_SOCKET, SO_RCVBUF, (char *)&optval, sizeof( int ) );
+    ((RTPSession *)streamSession_)->setSessionBandwidth( 8000000 );
   }
   else {
     ((RTPSession *)streamSession_)->setPayloadFormat( StaticPayloadFormat( sptPCMU ) );
