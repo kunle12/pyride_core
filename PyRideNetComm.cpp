@@ -1331,7 +1331,7 @@ void PyRideNetComm::processConsoleCommand( ClientItem * client, int subcommand, 
         int * retval = (int *)(retData + 2);
         PyRideExtendedCommand cmd = (PyRideExtendedCommand) commandData[0];
         retData[0] = cmd;
-        *retVal = 0;
+        *retval = 0;
         if (cmd == EXCLUSIVE_CTRL_REQUEST) {
           if (exclusiveCtrlClient_) {
             retData[1] = EXCLUSIVE_CTRL_REJECT;
