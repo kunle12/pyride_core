@@ -466,11 +466,20 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
 void PyRideNetComm::processTimer( void * data )
 {
   TimerObj * mytimer = (TimerObj *)data;
+  if (!pDataHandler_)
+    return;
+
   mytimer->isExecuting = true;
-  if (pDataHandler_) {
-    pDataHandler_->onTimer( mytimer->tID );
-  }
+  pDataHandler_->onTimer( mytimer->tID );
   mytimer->isExecuting = false;
+
+  if (mytimer->remainCount == 0) {
+    mytimer->isExecuting = true;
+    pDataHandler_->onTimerLapsed( mytimer->tID );
+    mytimer->isExecuting = false;
+    // remove the timer
+    delTimer( mytimer->tID );
+  }
 }
 
 void PyRideNetComm::continuousProcessing()
@@ -1853,7 +1862,7 @@ void PyRideNetComm::delTimer( long tID )
         // allow the timer finishing its execution
         // If the execution does not finish, we goes into an infinite loop,
         // let the programmer to discover the fault from the log file.
-        ERROR_MSG( "Unable to delete timer %ld: Timer thread is currently executing.", tID );
+        ERROR_MSG( "Unable to delete timer %ld: Timer thread is currently executing.\n", tID );
         usleep( 10000 );
       }
       if (timerPtr == timerList_) {
@@ -1970,15 +1979,15 @@ void PyRideNetComm::checkTimers()
   TimerObj * prevTimerPtr = timerPtr;
 
   while (timerPtr) {
-    if (timerPtr->nextTrigTime <= nowin10th) {
-      if (timerPtr->remainCount != -1) {
+    if (timerPtr->nextTrigTime <= nowin10th && timerPtr->remainCount != 0) {
+      if (timerPtr->remainCount > 0) {
         timerPtr->remainCount--;
       }
       // should fire the timer
       if (timerPtr->isExecuting) {
         ERROR_MSG( "Timer %u is still executing while it is called again! Skip\n", (int)timerPtr->tID );
       }
-      else if (timerPtr->remainCount > 0 || timerPtr->remainCount == -1) {
+      else {
         timerExecuteData * ted = new timerExecuteData;
         ted->timerObj = timerPtr;
         ted->mainObj = this;
@@ -1998,25 +2007,7 @@ void PyRideNetComm::checkTimers()
         }
 #endif
       }
-      if (timerPtr->remainCount == 0) { // remove the timer
-        if (pDataHandler_) {
-          pDataHandler_->onTimer( timerPtr->tID );
-          pDataHandler_->onTimerLapsed( timerPtr->tID );
-        }
-        if (timerPtr == timerList_) {
-          timerList_ = timerPtr->pNext;
-          prevTimerPtr = timerList_;
-          delete timerPtr;
-          timerPtr = timerList_;
-        }
-        else {
-          prevTimerPtr->pNext = timerPtr->pNext;
-          delete timerPtr;
-          timerPtr = prevTimerPtr->pNext;
-        }
-        timerCount_--;
-      }
-      else {
+      if (timerPtr->remainCount > 0 || timerPtr->remainCount == -1) {
         timerPtr->nextTrigTime = nowin10th + timerPtr->interval;
       }
     }
