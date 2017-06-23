@@ -2011,12 +2011,9 @@ void PyRideNetComm::checkTimers()
         timerPtr->nextTrigTime = nowin10th + timerPtr->interval;
       }
     }
-    else {
-      prevTimerPtr = timerPtr;
-      timerPtr = timerPtr->pNext;
-    }
+    prevTimerPtr = timerPtr;
+    timerPtr = timerPtr->pNext;
   }
-  lastTimer_ = prevTimerPtr;
 #ifdef WIN32
   LeaveCriticalSection( &timer_criticalSection_ );
 #else
