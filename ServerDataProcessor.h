@@ -90,6 +90,7 @@ public:
   void delAllTimers();
   long totalTimers();
   bool isTimerRunning( long tID );
+  bool isTimerExecuting( long tID );
 
 private:
   typedef std::vector<PyRideExtendedCommandHandler *> PyRideExtendedCommandHandlerList;

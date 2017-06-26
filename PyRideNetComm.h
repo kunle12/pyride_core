@@ -152,6 +152,7 @@ public:
   long addTimer( float initialTime, long repeats = 0, float interval = 1.0 );
   void delTimer( long tID );
   bool isTimerRunning( long tID );
+  bool isTimerExecuting( long tID );
   long totalTimers() { return timerCount_; }
   void delAllTimers();
 

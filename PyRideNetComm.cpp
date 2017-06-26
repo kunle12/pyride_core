@@ -1891,6 +1891,37 @@ void PyRideNetComm::delTimer( long tID )
 #endif
 }
 
+bool PyRideNetComm::isTimerExecuting( long tID )
+{
+  if (tID <= 0)
+    return false;
+
+#ifdef WIN32
+  EnterCriticalSection( &timer_criticalSection_ );
+#else
+  pthread_mutex_lock( &timer_mutex_ );
+#endif
+
+  TimerObj * timerPtr = timerList_;
+  while (timerPtr) {
+    if (timerPtr->tID == tID) {
+#ifdef WIN32
+      LeaveCriticalSection( &timer_criticalSection_ );
+#else
+      pthread_mutex_unlock( &timer_mutex_ );
+#endif
+      return timerPtr->isExecuting;
+    }
+    timerPtr = timerPtr->pNext;
+  }
+#ifdef WIN32
+  LeaveCriticalSection( &timer_criticalSection_ );
+#else
+  pthread_mutex_unlock( &timer_mutex_ );
+#endif
+  return false;
+}
+
 bool PyRideNetComm::isTimerRunning( long tID )
 {
   if (tID <= 0)

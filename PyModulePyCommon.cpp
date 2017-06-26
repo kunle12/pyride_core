@@ -39,6 +39,8 @@
     "Add a new timer object." },
   { "isTimerRunning", (PyCFunction)PyModule_IsTimerRunning, METH_VARARGS,
     "Check a timer with ID is still running." },
+  { "isTimerExecuting", (PyCFunction)PyModule_IsTimerExecuting, METH_VARARGS,
+    "Check a timer with ID is still executing." },
   { "removeTimer", (PyCFunction)PyModule_RemoveTimer, METH_VARARGS,
     "Remove a timer object with ID." },
   { "removeAllTimers", (PyCFunction)PyModule_RemoveAllTimers, METH_NOARGS,
@@ -445,6 +447,33 @@ static PyObject * PyModule_IsTimerRunning( PyObject * self, PyObject * args )
     return NULL;
   }
   if (ServerDataProcessor::instance()->isTimerRunning( timerID )) {
+    Py_RETURN_TRUE;
+  }
+  else {
+    Py_RETURN_FALSE;
+  }
+}
+
+/*! \typedef isTimerExecuting(timer_id)
+ *  \memberof ROBOT_MODEL_DOXYGEN.
+ *  \brief Check whether a timer object is in execution mode.
+ *  \param long timer_id. ID of the timer object.
+ *  \return True = timer is executing code; False = timer is in hibernation.
+ */
+static PyObject * PyModule_IsTimerExecuting( PyObject * self, PyObject * args )
+{
+  long timerID;
+
+  if (!PyArg_ParseTuple( args, "l", &timerID )) {
+    // PyArg_ParseTuple will set the error status.
+    return NULL;
+  }
+  if (timerID <= 0) {
+    PyErr_Format( PyExc_ValueError, "Py%s.isTimerExecuting: invalid timer ID."
+                 "The ID must be greater than zero.", PYRIDE_ROBOT_MODEL );
+    return NULL;
+  }
+  if (ServerDataProcessor::instance()->isTimerExecuting( timerID )) {
     Py_RETURN_TRUE;
   }
   else {

@@ -214,6 +214,11 @@ bool ServerDataProcessor::isTimerRunning( long tID )
   return pNetComm_->isTimerRunning( tID );
 }
 
+bool ServerDataProcessor::isTimerExecuting( long tID )
+{
+  return pNetComm_->isTimerExecuting( tID );
+}
+
 long ServerDataProcessor::totalTimers()
 {
   return pNetComm_->totalTimers();
