@@ -213,9 +213,9 @@ bool VideoToWebBridge::handle_list_streams(const async_web_server_cpp::HttpReque
 {
 
   connection->write("<html>"
-                    "<head><title>PyRIDE Video Feedback/title></head>"
+                    "<head><title>PyRIDE Video Feedback</title></head>"
                     "<body><h1>Remote user is currently streaming video images</h1>");
-  connection->write("<a href=\"/stream?topic=mjpeg\">Click here to view image</a>)");
+  connection->write("<a href=\"/stream?topic=mjpeg\">Click here to view image</a>");
   connection->write("</body></html>");
   return true;
 }
