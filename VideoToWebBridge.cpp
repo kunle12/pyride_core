@@ -81,7 +81,7 @@ bool VideoToWebBridge::start()
   }
 
   dataStream_ = new RTPDataReceiver();
-  dataStream_->init( PYRIDE_VIDEO_STREAM_BASE_PORT - 20, true );
+  dataStream_->init( PYRIDE_VIDEO_STREAM_BASE_PORT + 4, true );
 
   isRunning_ = true;
   struct timeval now;
