@@ -345,6 +345,35 @@ void ServerDataProcessor::onUserLogOff( SOCKET_T fd )
   }
 }
 
+int ServerDataProcessor::onExclusiveCtrlRequest( SOCKET_T fd )
+{
+  std::string username;
+  int retval = 0;
+
+  if (AppConfigManager::instance()->findUser( fd, username )) {
+    for (PyRideExtendedCommandHandlerList::iterator iter = cmdHandlerList_.begin();
+         iter != cmdHandlerList_.end(); iter++)
+    {
+      retval = (*iter)->onExclusiveCtrlRequest( username );
+      if (!retval)
+        break;
+    }
+  }
+  return retval;
+}
+
+void ServerDataProcessor::onExclusiveCtrlRelease( SOCKET_T fd )
+{
+  std::string username;
+  if (AppConfigManager::instance()->findUser( fd, username )) {
+    for (PyRideExtendedCommandHandlerList::iterator iter = cmdHandlerList_.begin();
+         iter != cmdHandlerList_.end(); iter++)
+    {
+      (*iter)->onExclusiveCtrlRelease( username );
+    }
+  }
+}
+
 void ServerDataProcessor::onTelemetryStreamControl( bool isStart )
 {
   for (PyRideExtendedCommandHandlerList::iterator iter = cmdHandlerList_.begin();

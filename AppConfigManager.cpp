@@ -346,6 +346,20 @@ bool AppConfigManager::signOutUser( SOCKET_T fd, std::string & username )
   return false;
 }
 
+bool AppConfigManager::findUser( SOCKET_T fd, std::string & username )
+{
+  if (fd == INVALID_SOCKET)
+    return false;
+
+  SignedInMap::iterator iter = signedInMap_.find( fd );
+  if (iter != signedInMap_.end()) {
+    UserData * info = iter->second;
+    username = info->name;
+    return true;
+  }
+  return false;
+}
+
 bool AppConfigManager::addUser( const char * name, const char * password )
 {
   if (!name || !password || strlen( password ) < 4)

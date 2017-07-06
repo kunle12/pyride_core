@@ -81,6 +81,10 @@ private:
   
   bool onUserLogOn( const std::string & name );
   void onUserLogOff( const std::string & name );
+
+  int onExclusiveCtrlRequest( const std::string & name );
+  void onExclusiveCtrlRelease( const std::string & name );
+
   void onTimer( const long timerID );
   void onTimerLapsed( const long timerID );
   

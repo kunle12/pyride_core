@@ -90,6 +90,8 @@ protected:
   virtual void cancelCurrentOperation() = 0;
   virtual bool onUserLogOn( const unsigned char * authCode, SOCKET_T fd, struct sockaddr_in & addr ) { return false; }
   virtual void onUserLogOff( SOCKET_T fd ) {}
+  virtual int onExclusiveCtrlRequest( SOCKET_T fd ) { return 0; }
+  virtual void onExclusiveCtrlRelease( SOCKET_T fd ) {}
 #endif
 
 private:

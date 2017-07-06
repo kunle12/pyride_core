@@ -33,6 +33,10 @@ protected:
   virtual void cancelCurrentOperation() = 0;
   virtual bool onUserLogOn( const std::string & name ) { return false; }
   virtual void onUserLogOff( const std::string & name ) {}
+
+  virtual int onExclusiveCtrlRequest( const std::string & name ) { return 0; }
+  virtual void onExclusiveCtrlRelease( const std::string & name ) {}
+
   virtual void onTimer( const long timerID ) {}
   virtual void onTimerLapsed( const long timerID ) {}
 
@@ -109,6 +113,10 @@ private:
   void cancelCurrentOperation();
   bool onUserLogOn( const unsigned char * authCode, SOCKET_T fd, struct sockaddr_in & addr );
   void onUserLogOff( SOCKET_T fd );
+
+  int onExclusiveCtrlRequest( SOCKET_T fd );
+  void onExclusiveCtrlRelease( SOCKET_T fd );
+
   void onTimer( const long timerID );
   void onTimerLapsed( const long timerID );
   

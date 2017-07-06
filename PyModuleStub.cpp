@@ -315,13 +315,14 @@ void PyModuleExtendedCommandHandler::cancelCurrentOperation()
  *  \memberof ROBOT_MODEL_DOXYGEN.
  *  \brief Callback function when a user logs in through a remote client.
  *  \param str user_name. The name of the user.
- *  \return None.
+ *  \return None or boolean. When the return value is false, the user will be
+ *  removed from the system; otherwise the user is allowed to use the robot.
  */
 bool PyModuleExtendedCommandHandler::onUserLogOn( const std::string & username )
 {
   if (!pyExtModule_)
-    return false;
-  
+    return true;
+
   PyObject * arg = NULL;
   PyObject * result = NULL;
   bool retVal = true; //make it more permissive.
@@ -354,7 +355,7 @@ void PyModuleExtendedCommandHandler::onUserLogOff( const std::string & username 
 {
   if (!pyExtModule_)
     return;
-  
+
   PyObject * arg = NULL;
 
   PyGILState_STATE gstate;
@@ -367,6 +368,66 @@ void PyModuleExtendedCommandHandler::onUserLogOff( const std::string & username 
 
   PyGILState_Release( gstate );
 
+}
+
+/*! \typedef onExclusiveControlRequest(user_name)
+ *  \memberof ROBOT_MODEL_DOXYGEN.
+ *  \brief Callback function when a user is requesting the exclusive
+ *  control of the robot through a remote client.
+ *  \param str user_name. The name of the user.
+ *  \return None or an integer. When the return value is a non-zero
+ *  integer, the user request is rejected; otherwise, the user will
+ *  gain the exclusive control right.
+ */
+int PyModuleExtendedCommandHandler::onExclusiveCtrlRequest( const std::string & username )
+{
+  if (!pyExtModule_)
+    return 0;
+  
+  PyObject * arg = NULL;
+  PyObject * result = NULL;
+  int retVal = 0; //make it more permissive.
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  arg = Py_BuildValue( "(s)", username.c_str() );
+
+  pyExtModule_->invokeCallback( "onExclusiveControlRequest", arg, result );
+  if (result && PyInt_Check( result )) {
+    retVal = (int)PyInt_AsLong( result );
+  }
+  Py_DECREF( arg );
+  Py_XDECREF( result );
+
+  PyGILState_Release( gstate );
+
+  return retVal;
+}
+
+/*! \typedef onExclusiveControlRelease(user_name)
+ *  \memberof ROBOT_MODEL_DOXYGEN.
+ *  \brief Callback function when a remote user releases the exclusive control.
+ *  \param str user_name. The name of the user.
+ *  \return None.
+ */
+/**@}*/
+void PyModuleExtendedCommandHandler::onExclusiveCtrlRelease( const std::string & username )
+{
+  if (!pyExtModule_)
+    return;
+  
+  PyObject * arg = NULL;
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  arg = Py_BuildValue( "(s)", username.c_str() );
+
+  pyExtModule_->invokeCallback( "onExclusiveControlRelease", arg );
+  Py_DECREF( arg );
+
+  PyGILState_Release( gstate );
 }
 
 /** @name Timer Management Functions

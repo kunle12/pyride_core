@@ -51,7 +51,9 @@ public:
 
   bool signInUserWithPassword( const unsigned char * code, SOCKET_T fd, struct sockaddr_in & addr, std::string & username );
   bool signOutUser( SOCKET_T fd, std::string & username );
-  
+
+  bool findUser( SOCKET_T fd, std::string & username );
+
   bool addUser( const char * name, const char * password );
   bool delUser( const char * name );
   bool changeUserPassword( const char * name, const char * oldpassword, const char * newpassword );
