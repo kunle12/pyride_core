@@ -350,7 +350,6 @@ bool PyModuleExtendedCommandHandler::onUserLogOn( const std::string & username )
  *  \param str user_name. The name of the user.
  *  \return None.
  */
-/**@}*/
 void PyModuleExtendedCommandHandler::onUserLogOff( const std::string & username )
 {
   if (!pyExtModule_)
