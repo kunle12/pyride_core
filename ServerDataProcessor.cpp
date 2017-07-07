@@ -355,7 +355,7 @@ int ServerDataProcessor::onExclusiveCtrlRequest( SOCKET_T fd )
          iter != cmdHandlerList_.end(); iter++)
     {
       retval = (*iter)->onExclusiveCtrlRequest( username );
-      if (!retval)
+      if (retval)
         break;
     }
   }
