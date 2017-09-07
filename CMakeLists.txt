@@ -12,6 +12,7 @@ qi_create_lib( pyridecore
       jdatabufferdst.cpp
       DeviceController.cpp
       ServerDataProcessor.cpp
+      RTPDataReceiver.cpp
       PyRideNetComm.cpp
       PyModuleStub.cpp
       AppConfigManager.cpp
