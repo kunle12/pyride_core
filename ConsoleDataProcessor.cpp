@@ -322,6 +322,20 @@ void ConsoleDataProcessor::onOperationalData( const char cID, const int status, 
   }
 }
 
+void ConsoleDataProcessor::onTimer( const long timerID )
+{
+  if (cmdHandler_) {
+    cmdHandler_->onTimer( timerID );
+  }
+}
+
+void ConsoleDataProcessor::onTimerLapsed( const long timerID )
+{
+  if (cmdHandler_) {
+    cmdHandler_->onTimerLapsed( timerID );
+  }
+}
+
 void ConsoleDataProcessor::onExtendedCommandResponse( const char cID, const PyRideExtendedCommand command,
                                                      const unsigned char * optionalData,
                                                      const int optionalDataLength )
@@ -388,6 +402,55 @@ void ConsoleDataProcessor::cancelCurrentOperation( const char cID )
 {
   if (pNetComm_) {
     pNetComm_->cancelCurrentOperation( cID );
+  }
+}
+
+long ConsoleDataProcessor::addTimer( float initialTime, long repeats, float interval )
+{
+  if (pNetComm_) {
+    if (repeats < 0) {
+      return pNetComm_->addTimer( initialTime, -1, interval );
+    }
+    return pNetComm_->addTimer( initialTime, repeats, interval );
+  }
+  return -1;
+}
+
+void ConsoleDataProcessor::delTimer( long tID )
+{
+  if (pNetComm_) {
+    pNetComm_->delTimer( tID );
+  }
+}
+
+bool ConsoleDataProcessor::isTimerRunning( long tID )
+{
+  if (pNetComm_) {
+    return pNetComm_->isTimerRunning( tID );
+  }
+  return false;
+}
+
+bool ConsoleDataProcessor::isTimerExecuting( long tID )
+{
+  if (pNetComm_) {
+    return pNetComm_->isTimerExecuting( tID );
+  }
+  return false;
+}
+
+long ConsoleDataProcessor::totalTimers()
+{
+  if (pNetComm_) {
+    return pNetComm_->totalTimers();
+  }
+  return 0;
+}
+
+void ConsoleDataProcessor::delAllTimers()
+{
+  if (pNetComm_) {
+    pNetComm_->delAllTimers();
   }
 }
 

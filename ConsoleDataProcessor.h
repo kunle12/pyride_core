@@ -70,6 +70,9 @@ protected:
                                  const unsigned char * optionalData = NULL,
                                  const int optionalDataLength = 0 ) {}
 
+  virtual void onTimer( const long timerID ) {}
+  virtual void onTimerLapsed( const long timerID ) {}
+
   friend class ConsoleDataProcessor;
 };
 
@@ -82,7 +85,7 @@ public:
   void init( PyRideConsoleCommandHandler * cmdHandler = NULL );
   void fini();
   void processingData();
-  
+
   bool logonToRobot( const char * host, const unsigned char * authCode );
   void discoverRobots();
   void disconnectRobots();
@@ -108,6 +111,13 @@ public:
   void setImageFormat( const char cID, ImageFormat format );
   void switchCamera( const char cID, const char vID );
   bool findClientAddress( const char cID, struct sockaddr_in & cAddr );
+
+  long addTimer( float initialTime, long repeats = 0, float interval = 1.0 );
+  void delTimer( long tID );
+  void delAllTimers();
+  long totalTimers();
+  bool isTimerRunning( long tID );
+  bool isTimerExecuting( long tID );
 
 private:
   PyRideNetComm * pNetComm_;
@@ -149,6 +159,8 @@ private:
   void onOperationalData( const char cID, const int status,
                          const unsigned char * optionalData = NULL,
                          const int optionalDataLength = 0 );
+  void onTimer( const long timerID );
+  void onTimerLapsed( const long timerID );
 };
 #else
 void initConsoleDataProcessor(void);
