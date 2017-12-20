@@ -309,6 +309,11 @@ bool PyRideNetComm::initTCPListener()
 void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
 {
   SOCKET_T fd = INVALID_SOCKET;
+  
+#ifndef PYRIDE_REMOTE_CLIENT
+  struct timeval now;
+  gettimeofday( &now, NULL );
+#endif
 
 #ifndef NO_AUTO_DISCOVERY
   struct sockaddr_in cAddr;
@@ -438,6 +443,23 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
         } while (readLen > 0);
       }
     }
+#ifndef PYRIDE_REMOTE_CLIENT
+    if (clientPtr->nextHeartBeat > 0 &&
+        clientPtr->nextHeartBeat < now.tv_sec)
+    {
+      clientPtr->missingHeartBeats++;
+      WARNING_MSG( "Missing heartbeat from client %d\n", clientPtr->fd );
+      if (clientPtr->missingHeartBeats > 2) {
+        ERROR_MSG( "Client %d has network problem. Missing heartbeat %d. Log user off.\n",
+                  clientPtr->fd, clientPtr->missingHeartBeats );
+        disconnectClient( clientPtr, true );
+      }
+      else { // assume the heartbeat is lost and expecting next heartbeat
+          clientPtr->nextHeartBeat = now.tv_sec + kHeartBeatWindow + 1; // allow one extra second latency
+      }
+    }
+#endif
+
     if (clientPtr->fd == INVALID_SOCKET) { // client has been disconnected
       if (clientPtr == clientList_) { // deletion of first node
         clientList_ = clientPtr->pNext;
@@ -766,6 +788,19 @@ void PyRideNetComm::processDataInput( ClientItem * client, const unsigned char *
         processConsoleCommand( client, subcommand, commandData, commandDataLen );
       }
       break;
+    case CLIENT_RESPONSE:
+      if (client->cID != cID) {
+        ERROR_MSG( "Console response contains incorrect Console ID. Ignore.\n" );
+      }
+      else {
+        if (subcommand == HEART_BEAT) {
+          client->missingHeartBeats = 0;
+          struct timeval now;
+          gettimeofday( &now, NULL );
+          client->nextHeartBeat = now.tv_sec + kHeartBeatWindow + 1; // allow one extra second latency
+        }
+      }
+      break;
 #endif
     case CLIENT_SHUTDOWN:
       if (client->cID != cID) {
@@ -912,6 +947,8 @@ void PyRideNetComm::cleanupClient( ClientItem * client )
       client->dataInfo.bufferedDataLength = client->dataInfo.expectedDataLength = 0;
     }
 #ifdef PYRIDE_REMOTE_CLIENT
+    client->missingHeartBeats = 0;
+    client->nextHeartBeat = 0;
     pDataHandler_->onRobotDestroyed( client->cID );
 #else
     client->pushData = false;
@@ -1066,6 +1103,19 @@ void PyRideNetComm::switchCamera( const char cID, const char vID )
     ClientItem * client = findClientFromClientList( cID );
     if (client) {
       this->clientDataSend( CLIENT_COMMAND, VIDEO_SWITCH, (unsigned char *)&vID, 1, client );
+    }
+  }
+}
+
+void PyRideNetComm::issueHeartBeat( const char cID )
+{
+  if (cID == 0) {
+    this->clientDataSend( CLIENT_RESPONSE, HEART_BEAT, NULL, 0 );
+  }
+  else {
+    ClientItem * client = findClientFromClientList( cID );
+    if (client) {
+      this->clientDataSend( CLIENT_RESPONSE, HEART_BEAT, NULL, 0, client );
     }
   }
 }
@@ -1256,6 +1306,10 @@ void PyRideNetComm::declareRobot( const RobotInfo * robotInfo, ClientItem * clie
 
   if (client) {
     this->clientDataSend( ROBOT_DECLARE, 0, declareData, dataSize, client );
+    // initiate heartbeat timer counting
+    struct timeval now;
+    gettimeofday( &now, NULL );
+    client->nextHeartBeat = now.tv_sec + kHeartBeatWindow + 1; // allow one extra second latency
   }
   else {
     this->clientDataSend( ROBOT_DECLARE, 0, declareData, dataSize, NULL, true );
@@ -1630,6 +1684,8 @@ PyRideNetComm::ClientItem * PyRideNetComm::addFdToClientList( const SOCKET_T & f
   newClient->activeVideoObj = NULL;
   newClient->activeAudioObj = NULL;
 #endif
+  newClient->missingHeartBeats = 0;
+  newClient->nextHeartBeat = 0;
   newClient->pNext = NULL;
 
 #ifdef WIN32

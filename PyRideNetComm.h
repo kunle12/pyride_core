@@ -135,6 +135,7 @@ public:
                             const unsigned char * optionalData , const int optionalDataLength );
   void setImageFormat( const char cID, ImageFormat format );
   void switchCamera( const char cID, const char vID );
+  void issueHeartBeat( const char cID );
 #else
   void declareRobot( const RobotInfo * robotInfo );
   void disconnectConsoles();
@@ -175,6 +176,8 @@ private:
     AudioDevice * activeAudioObj;
     VideoDevice * activeVideoObj;
 #endif
+    time_t nextHeartBeat;
+    int missingHeartBeats;
     struct sClientItem * pNext;
   } ClientItem;
 

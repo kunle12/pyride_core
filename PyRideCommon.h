@@ -19,7 +19,7 @@
 #endif
 #include "PyRideCustom.h"
 
-#define PYRIDE_PROTOCOL_VERSION  5
+#define PYRIDE_PROTOCOL_VERSION  6
 #define PYRIDE_MSG_INIT          0xAC
 #define PYRIDE_MSG_END           '#'
 #define PYRIDE_MSG_MIN_LENGTH    5
@@ -206,7 +206,6 @@ typedef enum {
 } PyRideControl;
 
 typedef enum {
-  USER_AUTH       = 0x1,
   VIDEO_SWITCH    = 0x0,
   VIDEO_START     = 0x1,
   VIDEO_STOP      = 0x2,
@@ -216,6 +215,11 @@ typedef enum {
   CUSTOM_COMMAND  = 0x6,
   CANCEL_CUR_OP   = 0x7
 } PyRideCommand;
+
+typedef enum {
+  HEART_BEAT      = 0x0, // used by CLIENT_RESPONSE
+  USER_AUTH       = 0x1  // used by ROBOT_DISCOVERY only
+} PyRideClientMode;
 
 typedef enum {
   YELLOW_GOAL = 0x1,
@@ -292,6 +296,7 @@ typedef struct {
   int reserved;
 } AudioSettings;
 
+static const int kHeartBeatWindow = 3; // in seconds
 static const int kSupportFrameRate[] = { 1, 2, 5, 10, 15, 20, 25, 30 };
 static const int kErrorFrameRate = 255;
 static const int kMaxSamplingRate = 20;
@@ -310,8 +315,8 @@ extern "C" {
 #endif
 unsigned char * decodeBase64( const char * input, size_t * outLen );
 char * encodeBase64( const unsigned char * input, size_t length );
-void endecryptInit();
-void endecryptFini();
+void endecryptInit(void);
+void endecryptFini(void);
 int decryptMessage( const unsigned char * origMesg, int origMesgLength, unsigned char ** decryptedMesg, int * decryptedMesgLength );
 int encryptMessage( const unsigned char * origMesg, int origMesgLength, unsigned char ** encryptedMesg, int * encryptedMesgLength );
 int secureSHA256Hash( const unsigned char * password, const int pwlen, unsigned char * code );

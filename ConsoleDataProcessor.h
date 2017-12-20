@@ -41,6 +41,7 @@ extern "C" {
   void cancelCurrentOperation( const char cID );
   void setImageFormat( const char cID, ImageFormat format );
   void switchCamera( const char cID, const char vID );
+  void issueHeartBeat( const char cID );
   void issueExtendedCommand( const char cID, const PyRideExtendedCommand command,
                             const unsigned char * optionalData, const int optionalDataLength );
   bool findClientAddress( const char cID, struct sockaddr_in * cAddr );
@@ -90,6 +91,7 @@ public:
   void startCameraImageStream( const char cID );
   void stopCameraImageStream( const char cID );
   void cancelCurrentOperation( const char cID );
+  void issueHeartBeat( const char cID );
   void issueExtendedCommand( const char cID, const PyRideExtendedCommand command,
                             const unsigned char * optionalData = NULL, const int optionalDataLength = 0 );
   void setRobotDataCallbacks( void (* addRobotFn)( const char, const int, const RobotInfo *, const VideoSettings *, const AudioSettings *,
@@ -149,9 +151,9 @@ private:
                          const int optionalDataLength = 0 );
 };
 #else
-void initConsoleDataProcessor();
-void finiConsoleDataProcessor();
-void processingData();
+void initConsoleDataProcessor(void);
+void finiConsoleDataProcessor(void);
+void processingData(void);
 void setRobotCallbacks( void (* addRobotFn)( const char, const int, const RobotInfo *, const VideoSettings *, const AudioSettings *,
                                         const unsigned char *, const int ),
                      void (* removeRobotFn)( const char ),
@@ -164,15 +166,16 @@ void setRobotCallbacks( void (* addRobotFn)( const char, const int, const RobotI
                      void (* extCommandRespFn)( const char, const PyRideExtendedCommand,
                                                  const unsigned char *, const int ) );
 bool logonToRobot( const char * host, const unsigned char * authCode );
-void discoverRobots();
-void disconnectRobots();
+void discoverRobots(void);
+void disconnectRobots(void);
 void startTelemetryStream( const char cID );
-void stopTelemetryStream();
+void stopTelemetryStream(void);
 void startCameraImageStream( const char cID );
 void stopCameraImageStream( const char cID );
 void cancelCurrentOperation( const char cID );
 void setImageFormat( const char cID, ImageFormat format );
 void switchCamera( const char cID, const char vID );
+void issueHeartBeat( const char cID );
 void issueExtendedCommand( const char cID, const PyRideExtendedCommand command,
                           const unsigned char * optionalData, const int optionalDataLength );
 bool findClientAddress( const char cID, struct sockaddr_in * cAddr );

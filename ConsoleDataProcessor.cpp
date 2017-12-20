@@ -100,6 +100,11 @@ void switchCamera( const char cID, const char vID )
   ConsoleDataProcessor::instance()->switchCamera( cID, vID );
 }
 
+void issueHeartBeat( const char cID )
+{
+  ConsoleDataProcessor::instance()->issueHeartBeat( cID );
+}
+
 void issueExtendedCommand( const char cID, const PyRideExtendedCommand command,
                           const unsigned char * optionalData , const int optionalDataLength )
 {
@@ -405,6 +410,13 @@ void ConsoleDataProcessor::switchCamera( const char cID, const char vID )
 {
   if (pNetComm_) {
     pNetComm_->switchCamera( cID, vID );
+  }
+}
+
+void ConsoleDataProcessor::issueHeartBeat( const char cID )
+{
+  if (pNetComm_) {
+    pNetComm_->issueHeartBeat( cID );
   }
 }
 
