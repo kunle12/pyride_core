@@ -175,9 +175,9 @@ private:
     bool pushImage;
     AudioDevice * activeAudioObj;
     VideoDevice * activeVideoObj;
-#endif
     time_t nextHeartBeat;
     int missingHeartBeats;
+#endif
     struct sClientItem * pNext;
   } ClientItem;
 

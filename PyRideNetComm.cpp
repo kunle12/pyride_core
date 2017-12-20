@@ -452,10 +452,10 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
       if (clientPtr->missingHeartBeats > 2) {
         ERROR_MSG( "Client %d has network problem. Missing heartbeat %d. Log user off.\n",
                   clientPtr->fd, clientPtr->missingHeartBeats );
-        disconnectClient( clientPtr, true );
+        disconnectClient( clientPtr );
       }
       else { // assume the heartbeat is lost and expecting next heartbeat
-          clientPtr->nextHeartBeat = now.tv_sec + kHeartBeatWindow + 1; // allow one extra second latency
+        clientPtr->nextHeartBeat = now.tv_sec + kHeartBeatWindow + 1; // allow one extra second latency
       }
     }
 #endif
@@ -947,10 +947,10 @@ void PyRideNetComm::cleanupClient( ClientItem * client )
       client->dataInfo.bufferedDataLength = client->dataInfo.expectedDataLength = 0;
     }
 #ifdef PYRIDE_REMOTE_CLIENT
-    client->missingHeartBeats = 0;
-    client->nextHeartBeat = 0;
     pDataHandler_->onRobotDestroyed( client->cID );
 #else
+    client->missingHeartBeats = 0;
+    client->nextHeartBeat = 0;
     client->pushData = false;
     if (client->pushImage) {
       if (client->activeVideoObj) {
@@ -1683,9 +1683,9 @@ PyRideNetComm::ClientItem * PyRideNetComm::addFdToClientList( const SOCKET_T & f
   newClient->pushImage = false;
   newClient->activeVideoObj = NULL;
   newClient->activeAudioObj = NULL;
-#endif
   newClient->missingHeartBeats = 0;
   newClient->nextHeartBeat = 0;
+#endif
   newClient->pNext = NULL;
 
 #ifdef WIN32
