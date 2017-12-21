@@ -698,7 +698,7 @@ void PyRideNetComm::processDataInput( ClientItem * client, const unsigned char *
         inet_ntop( AF_INET, &client->addr.sin_addr.s_addr, addressStr, INET_ADDRSTRLEN );
         DEBUG_MSG( "receive robot declare %s\n", addressStr );
          */
-        if (pDataHandler_ && commandDataLen >= (sizeof( RobotInfo ) + 1)) {
+        if (pDataHandler_ && commandDataLen >= int(sizeof( RobotInfo ) + 1)) {
           // DEBUG_MSG( "correct declare structure\n" );
           RobotInfo rinfo;
           VideoSettings vsettings;
@@ -2069,7 +2069,6 @@ void PyRideNetComm::checkTimers()
 #endif
 
   TimerObj * timerPtr = timerList_;
-  TimerObj * prevTimerPtr = timerPtr;
 
   while (timerPtr) {
     if (timerPtr->nextTrigTime <= nowin10th && timerPtr->remainCount != 0) {
@@ -2104,7 +2103,6 @@ void PyRideNetComm::checkTimers()
         timerPtr->nextTrigTime = nowin10th + timerPtr->interval;
       }
     }
-    prevTimerPtr = timerPtr;
     timerPtr = timerPtr->pNext;
   }
 #ifdef WIN32
