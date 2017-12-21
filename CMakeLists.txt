@@ -23,6 +23,6 @@ qi_create_lib( pyridecore
 
 qi_install_header( *.h )
 
-qi_use_lib(pyridecore pthread dl crypto ccrtp ccgnu2 jpeg python celt tinyxml asyncweb)
+qi_use_lib(pyridecore pthread dl ccrtp ccgnu2 jpeg python celt tinyxml asyncweb OPENSSL)
 qi_stage_lib(pyridecore)
 
