@@ -237,23 +237,29 @@ bool PythonServer::initPyInterpreter()
 
   // modify existing system path
   std::string versionStr = strtok( (char*)Py_GetVersion(), " " );
-  std::string localPathStr = scriptPath;
+  std::string userPathStr = scriptPath;
 
   char * evnhome = getenv( "HOME" );
   if (evnhome) {
-    std::string localPackagePath = ":";
-    localPackagePath += evnhome; localPackagePath += "/.local/lib/python";
-    localPackagePath += versionStr.substr( 0, versionStr.find_last_of( '.' ) );
-    localPathStr += localPackagePath + "/site-packages";
+    std::string userLocalPackagePath = ":";
+    userLocalPackagePath += evnhome; userLocalPackagePath += "/.local/lib/python";
+    userLocalPackagePath += versionStr.substr( 0, versionStr.find_last_of( '.' ) );
+    userPathStr += userLocalPackagePath + "/site-packages";
   }
 
   std::string packagePath = ":";
+  std::string localPackagePath = ":";
   packagePath += Py_GetPrefix(); packagePath += "/lib/python";
+  localPackagePath += Py_GetPrefix(); localPackagePath += "/local/lib/python";
   packagePath += versionStr.substr( 0, versionStr.find_last_of( '.' ) );
+  localPackagePath += versionStr.substr( 0, versionStr.find_last_of( '.' ) );
+
   std::string sysPathStr( Py_GetPath() );
   size_t delpos = sysPathStr.find( ':' );
-  sysPathStr.replace( 0, delpos, localPathStr );
+  sysPathStr.replace( 0, delpos, userPathStr );
 
+  sysPathStr += localPackagePath + "/dist-packages";
+  sysPathStr += localPackagePath + "/site-packages";
   sysPathStr += packagePath + "/dist-packages";
   sysPathStr += packagePath + "/site-packages";
 
