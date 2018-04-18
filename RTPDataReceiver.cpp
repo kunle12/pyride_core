@@ -131,14 +131,14 @@ void RTPDataReceiver::setStreamSource( const char * host, short controlPort, sho
 #else
     unsigned long hostIP;
     if (inet_pton( AF_INET, host, &hostIP ) != 1) {
-      ERROR_MSG( "RTPDataReceiver::setStreamSource: invalid hostname or address %s\n",
+      printf( "RTPDataReceiver::setStreamSource: invalid hostname or address %s\n",
                 host );
       return;
     }
 #endif
     hostInfo = gethostbyaddr( (char *)&hostIP, sizeof( hostIP ), AF_INET );
     if (hostInfo == NULL) {
-      ERROR_MSG( "RTPDataReceiver::setStreamSource: unable to get host info for %s\n", host );
+      printf( "RTPDataReceiver::setStreamSource: unable to get host info for %s\n", host );
       return;
     }
   }
@@ -157,7 +157,7 @@ void RTPDataReceiver::firewallPunching()
 {
   //DEBUG_MSG( "Punching time (%d/%d)\n", ntohs(cSourceAddr_.sin_port), ntohs(dSourceAddr_.sin_port) );
   if (sendto( dataSocket_, punchData, 8, 0, (struct sockaddr *)&dSourceAddr_, sizeof( dSourceAddr_ ) ) == -1) {
-    DEBUG_MSG( "failed to punch reason %s!\n", strerror(errno) );
+    printf( "failed to punch reason %s!\n", strerror(errno) );
   }
   sendto( controlSocket_, punchData, 8, 0, (struct sockaddr *)&cSourceAddr_, sizeof( cSourceAddr_ ) );
 }

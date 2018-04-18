@@ -19,7 +19,14 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #endif
-#include "PyRideCommon.h"
+
+#ifdef WIN32
+#include <winsock2.h>
+#define SOCKET_T  SOCKET
+#else
+#define SOCKET_T  int
+#define INVALID_SOCKET -1
+#endif
 
 namespace pyride_remote {
 class RTPDataReceiver {
