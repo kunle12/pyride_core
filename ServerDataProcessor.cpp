@@ -44,6 +44,7 @@ void ServerDataProcessor::init( const VideoDeviceList & videoObjs, const AudioDe
     pNetComm_->init( videoObjs, audioObjs );
   }
   activeVideoObjs_ = (VideoDeviceList *)&videoObjs;
+  activeAudioObjs_ = (AudioDeviceList *)&audioObjs;
 }
 
 void ServerDataProcessor::fini()
@@ -277,6 +278,24 @@ bool ServerDataProcessor::dispatchVideoDataTo( int vidObjID, struct sockaddr_in 
     return false;
   }
   VideoDevice * device = activeVideoObjs_->at( vidObjID );
+  if (todispath) {
+    device->start( cAddr, port );
+  }
+  else {
+    device->stop( cAddr, port );
+  }
+  return true;
+}
+
+bool ServerDataProcessor::dispatchAudioDataTo( struct sockaddr_in & cAddr, short port, bool todispath )
+{
+  int asize = activeAudioObjs_->size();
+
+  if (asize == 0) {
+    return false;
+  }
+
+  AudioDevice * device = activeAudioObjs_->at( 0 );
   if (todispath) {
     device->start( cAddr, port );
   }
