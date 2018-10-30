@@ -584,7 +584,7 @@ static PyObject * PyModule_DispatchAudioData( PyObject * self, PyObject * args, 
 
   if (!PyArg_ParseTupleAndKeywords( args, keywds, "siO", (char**)kDispatchAudioKWlist, &hostname, &port, &isYesObj ) ||
       !PyBool_Check( isYesObj )) {  // PyArg_ParseTuple will set the error status.
-    PyErr_Format( PyExc_ValueError, "Py%s.dispatchVideoTo: invalid keyworded input parameters.", PYRIDE_ROBOT_MODEL );
+    PyErr_Format( PyExc_ValueError, "Py%s.dispatchAudioTo: invalid keyworded input parameters.", PYRIDE_ROBOT_MODEL );
     return NULL;
   }
 
@@ -597,7 +597,7 @@ static PyObject * PyModule_DispatchAudioData( PyObject * self, PyObject * args, 
 #else
     if (inet_pton( AF_INET, hostname, &saddr ) != 1) {
 #endif
-      PyErr_Format( PyExc_ValueError, "Py%s.dispatchAudioTo: unable to resove host %s.", PYRIDE_ROBOT_MODEL, hostname );
+      PyErr_Format( PyExc_ValueError, "Py%s.dispatchAudioTo: unable to resolve host %s.", PYRIDE_ROBOT_MODEL, hostname );
       return NULL;
     }
   }
