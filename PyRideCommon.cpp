@@ -166,15 +166,24 @@ int decryptMessage( const unsigned char * origMesg, int origMesgLength, unsigned
   pthread_mutex_lock( &t_mutex_1 );
 #endif
   int oLen = 0, tLen = 0;
-  EVP_CIPHER_CTX ctx;
-  EVP_CIPHER_CTX_init( &ctx );
-  EVP_DecryptInit( &ctx, EVP_bf_cbc(), encrypt_key, encrypt_iv );
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+  EVP_CIPHER_CTX ectx;
+  EVP_CIPHER_CTX *ctx = &ectx;
+#else
+  EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+#endif
+  EVP_CIPHER_CTX_init( ctx );
+  EVP_DecryptInit( ctx, EVP_bf_cbc(), encrypt_key, encrypt_iv );
 
   memset( decryptbuffer, 0, PYRIDE_MSG_ENDECRYPT_BUFFER_SIZE );
   
-  if (EVP_DecryptUpdate( &ctx, decryptbuffer, &oLen, origMesg, origMesgLength ) != 1) {
+  if (EVP_DecryptUpdate( ctx, decryptbuffer, &oLen, origMesg, origMesgLength ) != 1) {
     //ERROR_MSG( "EVP_DecryptUpdate failed.\n" );
-    EVP_CIPHER_CTX_cleanup( &ctx );
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    EVP_CIPHER_CTX_cleanup( ctx );
+#else
+    EVP_CIPHER_CTX_free( ctx );
+#endif
 #ifdef WIN32
     LeaveCriticalSection( &t_criticalSection_1_ );
 #else
@@ -182,9 +191,13 @@ int decryptMessage( const unsigned char * origMesg, int origMesgLength, unsigned
 #endif
     return 0;
   }
-  if (EVP_DecryptFinal( &ctx, decryptbuffer+oLen, &tLen ) != 1) {
+  if (EVP_DecryptFinal( ctx, decryptbuffer+oLen, &tLen ) != 1) {
     //ERROR_MSG( "EVP_DecryptFinal failed.\n" );
-    EVP_CIPHER_CTX_cleanup( &ctx );
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    EVP_CIPHER_CTX_cleanup( ctx );
+#else
+    EVP_CIPHER_CTX_free( ctx );
+#endif
 #ifdef WIN32
     LeaveCriticalSection( &t_criticalSection_1_ );
 #else
@@ -195,7 +208,12 @@ int decryptMessage( const unsigned char * origMesg, int origMesgLength, unsigned
   
   *decryptedMesgLength = oLen + tLen;
   *decryptedMesg = decryptbuffer;
-  EVP_CIPHER_CTX_cleanup( &ctx );
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+  EVP_CIPHER_CTX_cleanup( ctx );
+#else
+  EVP_CIPHER_CTX_free( ctx );
+#endif
+
 #ifdef WIN32
   LeaveCriticalSection( &t_criticalSection_1_ );
 #else
@@ -212,15 +230,24 @@ int encryptMessage( const unsigned char * origMesg, int origMesgLength, unsigned
   pthread_mutex_lock( &t_mutex_2 );
 #endif
   int oLen = 0, tLen = 0;
-  EVP_CIPHER_CTX ctx;
-  EVP_CIPHER_CTX_init( &ctx );
-  EVP_EncryptInit( &ctx, EVP_bf_cbc(), encrypt_key, encrypt_iv );
-  
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+  EVP_CIPHER_CTX ectx;
+  EVP_CIPHER_CTX *ctx = &ectx;
+#else
+  EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+#endif
+  EVP_CIPHER_CTX_init( ctx );
+  EVP_EncryptInit( ctx, EVP_bf_cbc(), encrypt_key, encrypt_iv );
+
   memset( encryptbuffer, 0, PYRIDE_MSG_ENDECRYPT_BUFFER_SIZE );
   
-  if (EVP_EncryptUpdate( &ctx, encryptbuffer, &oLen, origMesg, origMesgLength ) != 1) {
+  if (EVP_EncryptUpdate( ctx, encryptbuffer, &oLen, origMesg, origMesgLength ) != 1) {
     //ERROR_MSG( "EVP_EncryptUpdate failed.\n" );
-    EVP_CIPHER_CTX_cleanup( &ctx );
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    EVP_CIPHER_CTX_cleanup( ctx );
+#else
+    EVP_CIPHER_CTX_free( ctx );
+#endif
 #ifdef WIN32
     LeaveCriticalSection( &t_criticalSection_2_ );
 #else
@@ -229,9 +256,13 @@ int encryptMessage( const unsigned char * origMesg, int origMesgLength, unsigned
     return 0;
   }
   
-  if (EVP_EncryptFinal( &ctx, encryptbuffer+oLen, &tLen ) != 1) {
+  if (EVP_EncryptFinal( ctx, encryptbuffer+oLen, &tLen ) != 1) {
     //ERROR_MSG( "EVP_EncryptFinal failed.\n" );
-    EVP_CIPHER_CTX_cleanup( &ctx );
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    EVP_CIPHER_CTX_cleanup( ctx );
+#else
+    EVP_CIPHER_CTX_free( ctx );
+#endif
 #ifdef WIN32
     LeaveCriticalSection( &t_criticalSection_2_ );
 #else
@@ -242,7 +273,12 @@ int encryptMessage( const unsigned char * origMesg, int origMesgLength, unsigned
   
   *encryptedMesgLength = oLen + tLen;
   *encryptedMesg = encryptbuffer;
-  EVP_CIPHER_CTX_cleanup( &ctx );
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+  EVP_CIPHER_CTX_cleanup( ctx );
+#else
+  EVP_CIPHER_CTX_free( ctx );
+#endif
+
 #ifdef WIN32
   LeaveCriticalSection( &t_criticalSection_2_ );
 #else
