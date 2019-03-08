@@ -49,6 +49,8 @@
     "List the ID of all active video objects." },
   { "dispatchVideoTo", (PyCFunction)PyModule_DispatchVideoData, METH_VARARGS|METH_KEYWORDS,
     "Send image data from a video object to a specific remote host." },
+  { "dispatchAudioTo", (PyCFunction)PyModule_DispatchAudioData, METH_VARARGS|METH_KEYWORDS,
+    "Send image data from audio object to a specific remote host." },
 #undef DEFINE_COMMON_PYMODULE_METHODS
 #endif
 
@@ -512,6 +514,7 @@ static PyObject * PyModule_ActiveVideoObjects( PyObject * self )
 }
 
 static const char *kDispatchVideoKWlist[] = { "devidx", "host", "port", "todispatch", NULL };
+static const char *kDispatchAudioKWlist[] = { "host", "port", "todispatch", NULL };
 
 static PyObject * PyModule_DispatchVideoData( PyObject * self, PyObject * args, PyObject * keywds )
 {
@@ -568,6 +571,60 @@ static PyObject * PyModule_DispatchVideoData( PyObject * self, PyObject * args, 
   }
   else {
     PyErr_Format( PyExc_SystemError, "Py%s.dispatchVideoTo: %s dispatching video data to %s failed.",
+                 PYRIDE_ROBOT_MODEL, PyObject_IsTrue( isYesObj ) ? "start" : "stop", hostname );
+    return NULL;
+  }
+}
+
+static PyObject * PyModule_DispatchAudioData( PyObject * self, PyObject * args, PyObject * keywds )
+{
+  char * hostname = NULL;
+  int port = 0;
+  PyObject * isYesObj = NULL;
+
+  if (!PyArg_ParseTupleAndKeywords( args, keywds, "siO", (char**)kDispatchAudioKWlist, &hostname, &port, &isYesObj ) ||
+      !PyBool_Check( isYesObj )) {  // PyArg_ParseTuple will set the error status.
+    PyErr_Format( PyExc_ValueError, "Py%s.dispatchAudioTo: invalid keyworded input parameters.", PYRIDE_ROBOT_MODEL );
+    return NULL;
+  }
+
+  unsigned long saddr = 0;
+  struct hostent * hostInfo = gethostbyname( hostname ); // try resolve name first
+  if (!hostInfo) {
+#ifdef WIN32
+    saddr = inet_addr( host );
+    if (saddr == INADDR_NONE) {
+#else
+    if (inet_pton( AF_INET, hostname, &saddr ) != 1) {
+#endif
+      PyErr_Format( PyExc_ValueError, "Py%s.dispatchAudioTo: unable to resolve host %s.", PYRIDE_ROBOT_MODEL, hostname );
+      return NULL;
+    }
+  }
+
+  struct sockaddr_in cAddr;
+  cAddr.sin_family = AF_INET;
+  if (hostInfo) {
+    memcpy( (char *)&cAddr.sin_addr, hostInfo->h_addr, hostInfo->h_length );
+  }
+  else {
+#ifdef WIN32
+    cAddr.sin_addr.s_addr = saddr;
+#else
+    cAddr.sin_addr.s_addr = (in_addr_t)saddr;
+#endif
+  }
+
+  if (port < 20000 || port > 55000) {
+    PyErr_Format( PyExc_ValueError, "Py%s.dispatchAudioTo: remote host port must be greater than 20000.", PYRIDE_ROBOT_MODEL );
+    return NULL;
+  }
+
+  if (ServerDataProcessor::instance()->dispatchAudioDataTo( cAddr, (short)port, PyObject_IsTrue( isYesObj ) )) {
+    Py_RETURN_NONE;
+  }
+  else {
+    PyErr_Format( PyExc_SystemError, "Py%s.dispatchAudioTo: %s dispatching video data to %s failed.",
                  PYRIDE_ROBOT_MODEL, PyObject_IsTrue( isYesObj ) ? "start" : "stop", hostname );
     return NULL;
   }
