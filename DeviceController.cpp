@@ -14,6 +14,8 @@ static const int VideoStreamID = 101;
   
 // a very stupid hack on port count
 static int DeviceLocalCount = 0;
+static int kSupportedAudioSamplingRate[] = {8000, 12000, 16000, 24000, 48000};
+static const int kSupportedAudioSamplingRateSize = sizeof( kSupportedAudioSamplingRate ) / sizeof( kSupportedAudioSamplingRate[0] );
 
 static inline unsigned char clamp( int pixel )
 {
@@ -592,23 +594,26 @@ int VideoDevice::compressToHalf( const unsigned char * imageData, const int imag
 }
 
 AudioDevice::AudioDevice() :
-  celtMode_( NULL ),
   audioEncoder_( NULL ),
-  audioFrameSize_( PYRIDE_AUDIO_FRAME_SIZE )
+  audioFrameSize_( PYRIDE_AUDIO_FRAME_PERIOD * PYRIDE_AUDIO_SAMPLE_RATE )
 {
   aSettings_.channels = 1;
   aSettings_.sampling = PYRIDE_AUDIO_SAMPLE_RATE;
   aSettings_.samplebytes = 2;
 
-  setProcessParameters();
-  
-  nofEncodedFrames_ = 32;
-  
-  encodedAudio_ = new unsigned char[PYRIDE_AUDIO_BYTES_PER_PACKET*nofEncodedFrames_];
+  if (this->setProcessParameters()) {
+    // max output buffer == auto opus bitrate == 8 * 1 second data
+    maxEncodedDataSize_ = int(1 / PYRIDE_AUDIO_FRAME_PERIOD) * 60 + PYRIDE_AUDIO_SAMPLE_RATE;
 
-  streamSession_->setPayloadFormat( StaticPayloadFormat( sptPCMU ) );
-  streamSession_->startRunning();
-  this->getUDPSourcePorts( aSettings_.dataport, aSettings_.ctrlport );
+    encodedAudio_ = new unsigned char[maxEncodedDataSize_];
+
+    streamSession_->setPayloadFormat( StaticPayloadFormat( sptPCMU ) );
+    streamSession_->startRunning();
+    this->getUDPSourcePorts( aSettings_.dataport, aSettings_.ctrlport );
+  }
+  else {
+    ERROR_MSG( "Unable to create audio streaming device\n" );
+  }
 }
 
 AudioDevice::~AudioDevice()
@@ -618,35 +623,34 @@ AudioDevice::~AudioDevice()
     encodedAudio_ = NULL;
   }
 
-  if (celtMode_) {
-    celt_encoder_destroy( audioEncoder_ );
-    celt_mode_destroy( celtMode_ );
-
+  if (audioEncoder_) {
+    opus_encoder_destroy( audioEncoder_ );
     audioEncoder_ = NULL;
-    celtMode_ = NULL;
   }
-
-  nofEncodedFrames_ = 0;
 }
 
 bool AudioDevice::setProcessParameters()
 {
   if (audioEncoder_) {
-    celt_encoder_destroy( audioEncoder_ );
-    celt_mode_destroy( celtMode_ );
+    opus_encoder_destroy( audioEncoder_ );
     audioEncoder_ = NULL;
   }
 
-  if (aSettings_.sampling == 8000)
-    audioFrameSize_ = PYRIDE_AUDIO_FRAME_SIZE / 2;
+  bool supported = false;
+  for (int i = 0; i < kSupportedAudioSamplingRateSize; i++) {
+    if (aSettings_.sampling == kSupportedAudioSamplingRate[i]) {
+      supported = true;
+      break;
+    }
+  }
 
-  celtMode_ = celt_mode_create( aSettings_.sampling, audioFrameSize_, NULL );
-
-  if (celtMode_) {
-    audioEncoder_ = celt_encoder_create_custom( celtMode_, aSettings_.channels, NULL );
+  if (supported && aSettings_.channels < 3) {
+    int err = 0;
+    audioEncoder_ = opus_encoder_create( aSettings_.sampling, aSettings_.channels, OPUS_APPLICATION_VOIP, &err );
     return (audioEncoder_ != NULL);
   }
-  ERROR_MSG( "Unable to initialise custom CELT mode.\n" );
+
+  ERROR_MSG( "Unable to initialise Opus audio encoder, check sampling rate and channels.\n" );
   return false;
 }
 
@@ -706,12 +710,11 @@ void AudioDevice::processAndSendAudioData( const signed short * data, const int 
     return;
 
   int dataFrames = nofSamples / audioFrameSize_;
-  if (nofEncodedFrames_ < dataFrames) {
-    nofEncodedFrames_ = dataFrames;
-    delete [] encodedAudio_;
-    encodedAudio_ = new unsigned char[PYRIDE_AUDIO_BYTES_PER_PACKET*nofEncodedFrames_];
-  }
   
+  if (dataFrames > int(1 / PYRIDE_AUDIO_FRAME_PERIOD)) {
+    WARNING_MSG( "Input audio sample frames is too big\n" );
+    dataFrames = int(1 / PYRIDE_AUDIO_FRAME_PERIOD);
+  }
   signed short * audioDataPtr = (short *)data;
   unsigned char * encodedDataPtr = encodedAudio_;
   
@@ -719,8 +722,8 @@ void AudioDevice::processAndSendAudioData( const signed short * data, const int 
   
   if (dataFrames > 0) {
     for (int i = 0;i < dataFrames; i++) {
-      elen = celt_encode( audioEncoder_, audioDataPtr, audioFrameSize_,
-                         encodedDataPtr, PYRIDE_AUDIO_BYTES_PER_PACKET );
+      elen = opus_encode( audioEncoder_, audioDataPtr, audioFrameSize_,
+                         encodedDataPtr, maxEncodedDataSize_ );
       encodedDataPtr += elen;
       audioDataPtr += audioFrameSize_ * aSettings_.channels;
     };

@@ -31,7 +31,7 @@
 #define PYRIDE_DEFAULT_BUFFER_SIZE         4096
 #define PYRIDE_MSG_BUFFER_SIZE             10240
 #define PYRIDE_AUDIO_SAMPLE_RATE           16000
-#define PYRIDE_AUDIO_FRAME_SIZE            256
+#define PYRIDE_AUDIO_FRAME_PERIOD          0.02 // time period for an audio frame 20ms
 #define PYRIDE_AUDIO_BYTES_PER_PACKET      46
 #define PYRIDE_AUDIO_BITS_PER_SAMPLE       16
 #define PYRIDE_AUDIO_BYTES_PER_SAMPLE      (PYRIDE_AUDIO_BITS_PER_SAMPLE/8)

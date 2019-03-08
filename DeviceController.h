@@ -16,9 +16,9 @@
 #include <vector>
 #include <string>
 #if defined ROS_BUILD || defined IOS_BUILD
-#include <celt/celt.h>
+#include <opus/opus.h>
 #else
-#include <celt.h>
+#include <opus.h>
 #endif
 #include "PyRideCommon.h"
 #ifdef JPEG62
@@ -101,10 +101,9 @@ protected:
   void processAndSendAudioData( const signed short * data, const int nofSamples );
 
 private:
-  CELTMode * celtMode_;
-  CELTEncoder * audioEncoder_;
+  OpusEncoder * audioEncoder_;
   
-  int nofEncodedFrames_;
+  int maxEncodedDataSize_;
   int audioFrameSize_;
   unsigned char * encodedAudio_;
 };
