@@ -15,25 +15,40 @@ namespace pyride_remote {
 
 using namespace ros;
 
+static int kSupportedAudioSamplingRate[] = {8000, 12000, 16000, 24000, 48000};
+static const int kSupportedAudioSamplingRateSize = sizeof( kSupportedAudioSamplingRate ) / sizeof( kSupportedAudioSamplingRate[0] );
+
 AudioDataReceiver::AudioDataReceiver( int port, int samplerate, int framesize, int packetbytes ) :
     maxCachedDataSize_( 0 ),
     samplerate_( samplerate ),
     framesize_( framesize ),
     packetbytes_( packetbytes ),
     dataStream_( NULL ),
-    celtMode_( NULL ),
     audioDecoder_( NULL )
 {
-  celtMode_ = celt_mode_create( samplerate, framesize, NULL );
+  bool supported = false;
+  for (int i = 0; i < kSupportedAudioSamplingRateSize; i++) {
+    if (samplerate == kSupportedAudioSamplingRate[i]) {
+      supported = true;
+      break;
+    }
+  }
 
-  if (!celtMode_) {
-    printf( "Unable to create encoding mode.\n" );
+  if (!supported) {
+    ERROR_MSG( "Unsupported audio sampling rate.\n" );
+    return;
+  }
+
+  int err = 0;
+
+  audioDecoder_ = opus_decoder_create( samplerate, 1, &err );
+
+  if (!audioDecoder_) {
+    ERROR_MSG( "Unable to initialise audio decoder.\n" );
     return;
   }
 
   maxCachedDataSize_ = 128 * framesize;
-
-  audioDecoder_ = celt_decoder_create_custom( celtMode_, 1, NULL );
 
   dataStream_ = new RTPDataReceiver();
   dataStream_->init( port, true );
@@ -42,12 +57,8 @@ AudioDataReceiver::AudioDataReceiver( int port, int samplerate, int framesize, i
 AudioDataReceiver::~AudioDataReceiver()
 {
   if (audioDecoder_) {
-    celt_decoder_destroy( audioDecoder_ );
+    opus_decoder_destroy( audioDecoder_ );
     audioDecoder_ = NULL;
-  }
-  if (celtMode_) {
-    celt_mode_destroy( celtMode_ );
-    celtMode_ = NULL;
   }
 
   if (dataStream_) {
@@ -79,19 +90,16 @@ int AudioDataReceiver::grabAudioStreamData( short * audioData )
   } while (dataSize == 0 && gcount < 10);
 
 
-  if (dataSize == 0 || dataSize % packetbytes_ != 0) {
+  if (dataSize == 0) {
     return 0;
   }
 
-  int audioFrames = dataSize / packetbytes_;
-
   //DEBUG_MSG("Got audio frames %d.\n", audioFrames );
 
-  for (int i = 0;i < audioFrames;i++) {
-    celt_decode( audioDecoder_, data+i*packetbytes_, packetbytes_,
-        audioData + i * framesize_, framesize_ );
-  }
-  decodedSize = audioFrames * framesize_ * sizeof( short );
+  int frame_size = opus_decode( audioDecoder_, data, dataSize,
+      audioData, maxCachedDataSize_ );
+
+  decodedSize = frame_size;
   return decodedSize;
 }
 

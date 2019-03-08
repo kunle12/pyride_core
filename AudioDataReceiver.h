@@ -15,7 +15,7 @@
 
 #include <ros/ros.h>
 
-#include <celt/celt.h>
+#include <opus/opus.h>
 
 #include "RTPDataReceiver.h"
 
@@ -39,8 +39,7 @@ private:
 
   RTPDataReceiver * dataStream_;
 
-  CELTMode * celtMode_;
-  CELTDecoder * audioDecoder_;
+  OpusDecoder * audioDecoder_;
 };
 
 } // namespace pyride
