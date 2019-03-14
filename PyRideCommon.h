@@ -235,7 +235,8 @@ typedef enum {
   TURTLE_BOT = 0x3,
   ROMO       = 0x4,
   PEPPER     = 0x5,
-  REEM       = 0x6
+  REEM       = 0x6,
+  CRUZR      = 0x7
 } RobotType;
 
 typedef enum {
