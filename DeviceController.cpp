@@ -5,6 +5,9 @@
 //  Created by Xun Wang on 14/02/13.
 //
 //
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 #include "DeviceController.h"
 
@@ -528,11 +531,17 @@ void VideoDevice::saveToJPEG( const unsigned char * imageData, const int imageDa
   gettimeofday( &now, NULL );
   struct tm * lt = localtime( &(now.tv_sec) );
   
-  sprintf( filename, "%s/%s_snapshot_%02d%02d%02d_%02d%02d%02d.jpg", PYRIDE_SNAPSHOT_SAVE_DIRECTORY, devInfo_.deviceLabel.c_str(),
+  char * homedir = getenv( "HOME" );
+  if (!homedir) {
+    struct passwd *pw = getpwuid( getuid() );
+    homedir = pw->pw_dir;
+  }
+
+  sprintf( filename, "%s/%s/%s_snapshot_%02d%02d%02d_%02d%02d%02d.jpg", homedir, PYRIDE_SNAPSHOT_SAVE_DIRECTORY, devInfo_.deviceLabel.c_str(),
           1900+lt->tm_year, lt->tm_mon + 1, lt->tm_mday, lt->tm_hour, lt->tm_min, lt->tm_sec );
   
   if ((outfile = fopen( filename, "wb" )) == NULL) {
-    ERROR_MSG( "Unable to save a snapshot!\n" );
+    ERROR_MSG( "Unable to save a snapshot at %s!\n", filename );
     return;
   }
   // DO a second compression

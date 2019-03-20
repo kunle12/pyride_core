@@ -28,11 +28,7 @@
 #include <jerror.h>
 #endif
 
-#ifdef ROS_BUILD
-#define PYRIDE_SNAPSHOT_SAVE_DIRECTORY     "/removable/recordings/cameras"
-#else
-#define PYRIDE_SNAPSHOT_SAVE_DIRECTORY     "/home/nao/recordings/cameras"
-#endif
+#define PYRIDE_SNAPSHOT_SAVE_DIRECTORY     "recordings/cameras"
 
 namespace pyride {
 
