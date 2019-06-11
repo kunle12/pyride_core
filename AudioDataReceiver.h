@@ -32,7 +32,6 @@ public:
   int grabAudioStreamData( short * audioData );
 
 private:
-  int maxCachedDataSize_;
   int samplerate_;
   int framesize_;
   int packetbytes_;

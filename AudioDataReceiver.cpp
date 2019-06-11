@@ -19,7 +19,6 @@ static int kSupportedAudioSamplingRate[] = {8000, 12000, 16000, 24000, 48000};
 static const int kSupportedAudioSamplingRateSize = sizeof( kSupportedAudioSamplingRate ) / sizeof( kSupportedAudioSamplingRate[0] );
 
 AudioDataReceiver::AudioDataReceiver( int port, int samplerate, int framesize, int packetbytes ) :
-    maxCachedDataSize_( 0 ),
     samplerate_( samplerate ),
     framesize_( framesize ),
     packetbytes_( packetbytes ),
@@ -35,7 +34,7 @@ AudioDataReceiver::AudioDataReceiver( int port, int samplerate, int framesize, i
   }
 
   if (!supported) {
-    ERROR_MSG( "Unsupported audio sampling rate.\n" );
+    //ERROR_MSG( "Unsupported audio sampling rate.\n" );
     return;
   }
 
@@ -44,11 +43,9 @@ AudioDataReceiver::AudioDataReceiver( int port, int samplerate, int framesize, i
   audioDecoder_ = opus_decoder_create( samplerate, 1, &err );
 
   if (!audioDecoder_) {
-    ERROR_MSG( "Unable to initialise audio decoder.\n" );
+    //ERROR_MSG( "Unable to initialise audio decoder.\n" );
     return;
   }
-
-  maxCachedDataSize_ = 128 * framesize;
 
   dataStream_ = new RTPDataReceiver();
   dataStream_->init( port, true );
@@ -69,7 +66,7 @@ AudioDataReceiver::~AudioDataReceiver()
 
 int AudioDataReceiver::grabAudioStreamData( short * audioData )
 {
-  if (!dataStream_ || maxCachedDataSize_ == 0 || audioData == NULL)
+  if (!dataStream_ || audioData == NULL)
     return 0;
 
   unsigned char * rawData = NULL;
@@ -97,7 +94,7 @@ int AudioDataReceiver::grabAudioStreamData( short * audioData )
   //DEBUG_MSG("Got audio frames %d.\n", audioFrames );
 
   int frame_size = opus_decode( audioDecoder_, data, dataSize,
-      audioData, maxCachedDataSize_ );
+      audioData, samplerate_, 0 );
 
   decodedSize = frame_size;
   return decodedSize;
