@@ -5,7 +5,7 @@ project(PyRideCore)
 find_package(qibuild)
 
 include_directories( "." )
-add_definitions( -DUSE_ENCRYPTION -DNAO_BUILD)
+add_definitions(-DUSE_ENCRYPTION)
 
 qi_create_lib( pyridecore
   SRC PyRideCommon.cpp
@@ -23,6 +23,6 @@ qi_create_lib( pyridecore
 
 qi_install_header( *.h )
 
-qi_use_lib(pyridecore pthread dl ccrtp ccgnu2 jpeg python celt tinyxml asyncweb OPENSSL)
+qi_use_lib(pyridecore pthread dl ccrtp ccgnu2 jpeg python opus tinyxml asyncweb OPENSSL)
 qi_stage_lib(pyridecore)
 

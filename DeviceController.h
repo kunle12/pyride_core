@@ -15,11 +15,8 @@
 #include <ccrtp/rtp.h>
 #include <vector>
 #include <string>
-#if defined ROS_BUILD || defined IOS_BUILD
 #include <opus/opus.h>
-#else
-#include <opus.h>
-#endif
+
 #include "PyRideCommon.h"
 #ifdef JPEG62
 #include "jdatabufferdst.h"
