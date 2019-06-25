@@ -7,6 +7,10 @@ find_package(qibuild)
 include_directories( "." )
 add_definitions(-DUSE_ENCRYPTION)
 
+if(OLD_NAO)
+add_definitions(-DOLD_NAO)
+endif()
+
 qi_create_lib( pyridecore
   SRC PyRideCommon.cpp
       jdatabufferdst.cpp

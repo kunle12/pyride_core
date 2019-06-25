@@ -15,8 +15,11 @@
 #include <ccrtp/rtp.h>
 #include <vector>
 #include <string>
+#ifdef OLD_NAO
+#include <opus.h>
+#else
 #include <opus/opus.h>
-
+#endif
 #include "PyRideCommon.h"
 #ifdef JPEG62
 #include "jdatabufferdst.h"

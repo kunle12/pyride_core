@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
+#include <stdlib.h>
 
 #include "DeviceController.h"
 
