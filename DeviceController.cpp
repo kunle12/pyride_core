@@ -605,18 +605,13 @@ int VideoDevice::compressToHalf( const unsigned char * imageData, const int imag
 
 AudioDevice::AudioDevice() :
   audioEncoder_( NULL ),
-  audioFrameSize_( PYRIDE_AUDIO_FRAME_PERIOD * PYRIDE_AUDIO_SAMPLE_RATE )
+  encodedAudio_( NULL )
 {
   aSettings_.channels = 1;
   aSettings_.sampling = PYRIDE_AUDIO_SAMPLE_RATE;
   aSettings_.samplebytes = 2;
 
   if (this->setProcessParameters()) {
-    // max output buffer == auto opus bitrate == 8 * 1 second data
-    maxEncodedDataSize_ = int(1 / PYRIDE_AUDIO_FRAME_PERIOD) * 60 + PYRIDE_AUDIO_SAMPLE_RATE;
-
-    encodedAudio_ = new unsigned char[maxEncodedDataSize_];
-
     streamSession_->setPayloadFormat( StaticPayloadFormat( sptPCMU ) );
     streamSession_->startRunning();
     this->getUDPSourcePorts( aSettings_.dataport, aSettings_.ctrlport );
@@ -657,9 +652,19 @@ bool AudioDevice::setProcessParameters()
   if (supported && aSettings_.channels < 3) {
     int err = 0;
     audioEncoder_ = opus_encoder_create( aSettings_.sampling, aSettings_.channels, OPUS_APPLICATION_VOIP, &err );
-    return (audioEncoder_ != NULL);
-  }
 
+    if (audioEncoder_ && err == OPUS_OK) {
+      audioFrameSize_ = PYRIDE_AUDIO_FRAME_PERIOD * aSettings_.sampling;
+    // max output buffer == auto opus bitrate == 8 * 1 second data
+      maxEncodedDataSize_ = int(1 / PYRIDE_AUDIO_FRAME_PERIOD) * 60 + aSettings_.sampling;
+
+      if (encodedAudio_) {
+        delete [] encodedAudio_;
+      }
+      encodedAudio_ = new unsigned char[maxEncodedDataSize_];
+      return true;
+    }
+  }
   ERROR_MSG( "Unable to initialise Opus audio encoder, check sampling rate and channels.\n" );
   return false;
 }
@@ -734,8 +739,13 @@ void AudioDevice::processAndSendAudioData( const signed short * data, const int 
     for (int i = 0;i < dataFrames; i++) {
       elen = opus_encode( audioEncoder_, audioDataPtr, audioFrameSize_,
                          encodedDataPtr, maxEncodedDataSize_ );
-      encodedDataPtr += elen;
-      audioDataPtr += audioFrameSize_ * aSettings_.channels;
+      if (elen > 0) {
+        encodedDataPtr += elen;
+        audioDataPtr += audioFrameSize_ * aSettings_.channels;
+      }
+      else {
+        ERROR_MSG( "opus encoding error %d\n", elen );
+      }
     };
     this->dispatchData( encodedAudio_, encodedDataPtr - encodedAudio_ );
   }
