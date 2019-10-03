@@ -156,7 +156,7 @@ bool PyModuleExtension::invokeCallback( const char * fnName, PyObject * arg )
   
   //DEBUG_MSG( "Attempt get callback function %s\n", fnName );
   PyObject * callbackFn = PyObject_GetAttrString( pPyModule_, const_cast<char *>(fnName) );
-  if (!callbackFn) {
+  if (!callbackFn || callbackFn == Py_None) {
     PyErr_Clear();
     return retval;
   }
