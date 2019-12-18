@@ -233,7 +233,7 @@ typedef enum {
   NAO        = 0x1,
   PR2        = 0x2,
   TURTLE_BOT = 0x3,
-  ROMO       = 0x4,
+  KIOSK      = 0x4,
   PEPPER     = 0x5,
   REEM       = 0x6,
   CRUZR      = 0x7
