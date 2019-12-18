@@ -860,7 +860,7 @@ void PyRideNetComm::disconnectClient( ClientItem * client, bool sendNotification
 #ifdef WIN32
         send( client->fd, (char*)dispatchDataBuffer_, outputLength, 0 );
 #else
-        write( client->fd, dispatchDataBuffer_, outputLength );
+        ssize_t retval = ::write( client->fd, dispatchDataBuffer_, outputLength );
 #endif
     }
     else {
@@ -870,7 +870,7 @@ void PyRideNetComm::disconnectClient( ClientItem * client, bool sendNotification
 #ifdef WIN32
           send( fdPtr->fd, (char*)dispatchDataBuffer_, outputLength, 0 );
 #else
-          write( fdPtr->fd, dispatchDataBuffer_, outputLength );
+          ssize_t retval = ::write( fdPtr->fd, dispatchDataBuffer_, outputLength );
 #endif
         fdPtr = fdPtr->pNext;
       }
@@ -1588,7 +1588,7 @@ void PyRideNetComm::clientDataSend( const int command, const int subcommand,
       send( client->fd, (char*)dispatchDataBuffer_, outputLength, 0 );
 #else
       //DEBUG_MSG( "sending total packet size %d, data count %d\n", outputLength, opl );
-      write( client->fd, dispatchDataBuffer_, outputLength );
+      ssize_t retval = ::write( client->fd, dispatchDataBuffer_, outputLength );
 #endif
     }
     else {
@@ -1598,7 +1598,7 @@ void PyRideNetComm::clientDataSend( const int command, const int subcommand,
 #ifdef WIN32
           send( cPtr->fd, (char*)dispatchDataBuffer_, outputLength, 0 );
 #else
-          write( cPtr->fd, dispatchDataBuffer_, outputLength );
+          ssize_t retval = ::write( cPtr->fd, dispatchDataBuffer_, outputLength );
 #endif
         }
         cPtr = cPtr->pNext;

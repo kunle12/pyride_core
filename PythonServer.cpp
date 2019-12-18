@@ -1422,7 +1422,7 @@ void PythonSession::write( const char * str )
   
   //DEBUG_MSG(("PythonSession::Send() send over %s chars\n", str));
   if (fd_ != INVALID_SOCKET) {
-    ::write( fd_, str, strlen( str ) );
+    ssize_t retval = ::write( fd_, str, strlen( str ) );
   }
 }
 
