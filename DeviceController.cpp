@@ -94,7 +94,7 @@ bool DeviceController::getUDPSourcePorts( short & dataport, short & ctrlport )
   unsigned char dataBuffer[200];
   unsigned char testData[] = "test";
   
-  if (!streamSession_->addDestination( InetHostAddress( "0.0.0.0" ), PYRIDE_CONTROL_PORT )) {
+  if (!streamSession_->addDestination( InetHostAddress( "127.0.0.1" ), PYRIDE_CONTROL_PORT )) {
     //ERROR_MSG( "getUDPSourcePorts:: unable to add loop source." );
     return found;
   }
@@ -153,11 +153,11 @@ bool DeviceController::getUDPSourcePorts( short & dataport, short & ctrlport )
   }
   close( controlSocket );
   close( dataSocket );
-  streamSession_->forgetDestination( InetHostAddress( "0.0.0.0" ),
+  streamSession_->forgetDestination( InetHostAddress( "127.0.0.1" ),
                                     PYRIDE_CONTROL_PORT );
-  return true;
   //DEBUG_MSG( "Got local source control/data port (%d, %d).", ntohs( dataport ),
   //          ntohs( ctrlport ) );
+  return true;
 }
 
 bool VideoDevice::YUV422ToRGB24( unsigned char * dstData, int dstDataSize, const unsigned char * srcData, const int srcDataSize )
