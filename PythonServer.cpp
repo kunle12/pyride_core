@@ -1,9 +1,18 @@
 #include <string.h>
+#include <locale>
+#include <codecvt>
+#include <string>
 #include "PythonServer.h"
 
 namespace pyride {
 
 #define max( a, b ) (a > b) ? a : b
+
+#if PY_MAJOR_VERSION >= 3
+  #define PyInt_FromLong PyLong_FromLong
+  #define PyInt_AsLong PyLong_AsLong
+  #define PyInt_Check PyLong_Check
+#endif
 
 static const char goodByeMsg[] = "\r\nGoodbye from UTS PyRIDE Python Console.\r\n";
 
@@ -222,13 +231,17 @@ bool PythonServer::initPyInterpreter()
     gstate = PyGILState_Ensure();
   }
   else {
+#if PY_MAJOR_VERSION >= 3
+    if (strlen(customPythonHome)) {
+      wchar_t * homeStr = Py_DecodeLocale( customPythonHome, NULL );
+      Py_SetPythonHome( homeStr );
+      PyMem_RawFree( homeStr );
+    }
+#else
     if (strlen(customPythonHome)) {
       Py_SetPythonHome( (char *)customPythonHome );
     }
-    else {
-      Py_SetPythonHome( (char *)"/usr" );
-    }
-
+#endif
     Py_InitializeEx( 0 );
     PyEval_InitThreads();
   }
@@ -247,14 +260,38 @@ bool PythonServer::initPyInterpreter()
     userPathStr += userLocalPackagePath + "/site-packages";
   }
 
+#if PY_MAJOR_VERSION >= 3
+  std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+  std::wstring packagePath = L":";
+  std::wstring localPackagePath = L":";
+  std::wstring sysPathStr( Py_GetPath() );
+
+  std::wstring versionWStr = converter.from_bytes( versionStr.substr( 0, versionStr.find_last_of( '.' ) ) );
+  std::wstring uPathWStr = converter.from_bytes( userPathStr );
+  packagePath += Py_GetPrefix(); packagePath += L"/lib/python";
+  localPackagePath += Py_GetPrefix(); localPackagePath += L"/local/lib/python";
+  packagePath += versionWStr;
+  localPackagePath += versionWStr;
+
+  size_t delpos = sysPathStr.find( L':' );
+  sysPathStr.replace( 0, delpos, uPathWStr );
+
+  sysPathStr += localPackagePath + L"/dist-packages";
+  sysPathStr += localPackagePath + L"/site-packages";
+  sysPathStr += packagePath + L"/dist-packages";
+  sysPathStr += packagePath + L"/site-packages";
+
+  PySys_SetPath( (wchar_t*)sysPathStr.c_str() );
+#else
   std::string packagePath = ":";
   std::string localPackagePath = ":";
+  std::string sysPathStr( Py_GetPath() );
+
   packagePath += Py_GetPrefix(); packagePath += "/lib/python";
   localPackagePath += Py_GetPrefix(); localPackagePath += "/local/lib/python";
   packagePath += versionStr.substr( 0, versionStr.find_last_of( '.' ) );
   localPackagePath += versionStr.substr( 0, versionStr.find_last_of( '.' ) );
 
-  std::string sysPathStr( Py_GetPath() );
   size_t delpos = sysPathStr.find( ':' );
   sysPathStr.replace( 0, delpos, userPathStr );
 
@@ -264,6 +301,7 @@ bool PythonServer::initPyInterpreter()
   sysPathStr += packagePath + "/site-packages";
 
   PySys_SetPath( (char*)sysPathStr.c_str() );
+#endif
 
   pSysModule_ = PyImport_ImportModule( "sys" );
 
@@ -274,7 +312,11 @@ bool PythonServer::initPyInterpreter()
  
   if (!PyObject_HasAttrString( pSysModule_, "argv" )) {
     PyObject * argObj = PyList_New( 1 );
+#if PY_MAJOR_VERSION >= 3
+    PyList_SetItem( argObj, 0, PyUnicode_FromString( "" ) );
+#else
     PyList_SetItem( argObj, 0, PyString_FromString( "" ) );
+#endif
     PyObject_SetAttrString( pSysModule_, "argv", argObj );
     Py_DECREF( argObj );
   } 
@@ -404,11 +446,16 @@ bool PythonServer::initTelnetConsole()
   if (clientDataBuffer_ == NULL)
     clientDataBuffer_ = new unsigned char[PS_RECEIVE_BUFFER_SIZE];
 
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
   prevStderr_ = PyObject_GetAttrString( pSysModule_, "stderr" );
   prevStdout_ = PyObject_GetAttrString( pSysModule_, "stdout" );
 
   PyObject_SetAttrString( pSysModule_, "stderr", pPyMod_ );
   PyObject_SetAttrString( pSysModule_, "stdout", pPyMod_ );
+
+  PyGILState_Release( gstate ); // may not be necessary
 
   runningTelnetConsole_ = true;
 
@@ -471,11 +518,16 @@ void PythonServer::restartPythonServer()
   this->initPyInterpreter();
   this->broadcastServerMessage( "\r\nPython Interpreter has been restarted. Attempt to rerun main script.\r\n" );
   if (runningTelnetConsole_) {
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+
     prevStderr_ = PyObject_GetAttrString( pSysModule_, "stderr" );
     prevStdout_ = PyObject_GetAttrString( pSysModule_, "stdout" );
 
     PyObject_SetAttrString( pSysModule_, "stderr", pPyMod_ );
     PyObject_SetAttrString( pSysModule_, "stdout", pPyMod_ );
+
+    PyGILState_Release( gstate ); // may not be necessary
   }
   this->runMainScript();
   //PyEval_ReleaseLock(); // release the GIL lock so that other threads can acquire it.
@@ -650,9 +702,15 @@ bool PythonServer::RunMyString( const char * command )
   
   Py_DECREF( ret );
 
+#if PY_MAJOR_VERSION >= 3
+  PyObject * f = PySys_GetObject("stdout");
+
+  if (f == 0 || PyFile_WriteString( "", f ) != 0)
+    PyErr_Clear();
+#else
   if (Py_FlushLine())
     PyErr_Clear();
-    
+#endif
   PyGILState_Release( gstate );
 
   return true;
@@ -771,9 +829,23 @@ void PythonServer::initModuleExtension()
 
   pPyMod_ = pyModuleExtension_->init( this );
   if (pPyMod_) {
-    char runstring[200];
-    sprintf( runstring, "import %s", pyModuleExtension_->name().c_str() );
-    RunMyString( runstring );
+    PyObject * modules = PyImport_GetModuleDict();
+#if PY_MAJOR_VERSION >= 3
+    PyObject * nameobj = PyUnicode_FromString( pyModuleExtension_->name().c_str() );
+#else
+    PyObject * nameobj = PyString_FromString( pyModuleExtension_->name().c_str() );
+#endif
+    if (!modules || !nameobj) {
+      ERROR_MSG( "Error prepare for module extension.\n" );
+      return;
+    }
+
+    if (PyDict_SetItem( modules, nameobj, pPyMod_ ) != 0 ||
+        PyObject_SetAttr( pMainModule_, nameobj, pPyMod_ ) != 0)
+    {
+      ERROR_MSG( "Unable to insert module extension!\n" );
+    }
+    Py_DECREF(nameobj);
   }
 }
 
@@ -797,19 +869,21 @@ bool PythonServer::getObjectDir( const std::string & searchStr, std::vector<std:
 
   PyObject * searchingObj = pMainModule_;
   Py_INCREF( searchingObj );
-
   std::string targetStr = searchStr;
   std::size_t found, listSize;
 
   while (!targetStr.empty()) {
     found = targetStr.find_first_of( "." );
-
     if (found == std::string::npos) {
       // search the current object for attr/meth/obj match to the search string
       PyObject * metdList = PyObject_Dir( searchingObj );
       if (metdList && (listSize = PyList_Size( metdList )) > 0) {
         for (int i = 0; i < listSize; i++) {
-          std::string methodStr = PyString_AsString( PyList_GetItem( metdList, i ) );
+#if PY_MAJOR_VERSION >= 3
+          std::string methodStr( PyUnicode_AsUTF8( PyUnicode_FromObject( PyList_GetItem( metdList, i ) ) ) );
+#else
+          std::string methodStr( PyString_AsString( PyList_GetItem( metdList, i ) ) );
+#endif
           if (methodStr.find( targetStr ) == 0) {
             mlist.push_back( methodStr );
           }
@@ -828,7 +902,11 @@ bool PythonServer::getObjectDir( const std::string & searchStr, std::vector<std:
           PyObject * metdList = PyObject_Dir( searchingObj );
           if (metdList && (listSize = PyList_Size( metdList )) > 0) {
             for (int i = 0; i < listSize; i++) {
-              std::string methodStr = PyString_AsString( PyList_GetItem( metdList, i ) );
+#if PY_MAJOR_VERSION >= 3
+              std::string methodStr( PyUnicode_AsUTF8( PyUnicode_FromObject( PyList_GetItem( metdList, i ) ) ) );
+#else
+              std::string methodStr( PyString_AsString( PyList_GetItem( metdList, i ) ) );
+#endif
               mlist.push_back( methodStr );
             }
           }

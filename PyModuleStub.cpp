@@ -9,6 +9,11 @@
 
 namespace pyride {
 
+#if PY_MAJOR_VERSION >= 3
+  #define PyInt_AsLong PyLong_AsLong
+  #define PyInt_Check PyLong_Check
+#endif
+
 std::vector<long> g_PyModuleTimerList;
 
 //#pragma mark PyModuleExtension implmentation
@@ -62,17 +67,18 @@ PyObject * PyModuleExtension::init( PyOutputWriter * pow )
 void PyModuleExtension::fini()
 {
   if (pPyModule_) {
-    //Py_DECREF( pPyModule_ );
     for (size_t i = 0; i < g_PyModuleTimerList.size(); i++) {
       ServerDataProcessor::instance()->delTimer( g_PyModuleTimerList[i] );
     }
     g_PyModuleTimerList.clear();
     
-    pPyModule_ = NULL;
     ServerDataProcessor::instance()->removeCommandHandler( pyModuleCommandHandler_ );
     delete pyModuleCommandHandler_;
     pyModuleCommandHandler_ = NULL;
     pow_ = NULL;
+
+    Py_DECREF( pPyModule_ );
+    pPyModule_ = NULL;
   }
 }
 
