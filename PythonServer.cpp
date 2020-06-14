@@ -880,7 +880,9 @@ bool PythonServer::getObjectDir( const std::string & searchStr, std::vector<std:
       if (metdList && (listSize = PyList_Size( metdList )) > 0) {
         for (int i = 0; i < listSize; i++) {
 #if PY_MAJOR_VERSION >= 3
-          std::string methodStr( PyUnicode_AsUTF8( PyUnicode_FromObject( PyList_GetItem( metdList, i ) ) ) );
+          PyObject * unicodeobj = PyUnicode_FromObject( PyList_GetItem( metdList, i ) );
+          std::string methodStr( PyUnicode_AsUTF8( unicodeobj ) );
+          Py_DECREF( unicodeobj );
 #else
           std::string methodStr( PyString_AsString( PyList_GetItem( metdList, i ) ) );
 #endif
@@ -903,7 +905,9 @@ bool PythonServer::getObjectDir( const std::string & searchStr, std::vector<std:
           if (metdList && (listSize = PyList_Size( metdList )) > 0) {
             for (int i = 0; i < listSize; i++) {
 #if PY_MAJOR_VERSION >= 3
-              std::string methodStr( PyUnicode_AsUTF8( PyUnicode_FromObject( PyList_GetItem( metdList, i ) ) ) );
+              PyObject * unicodeobj = PyUnicode_FromObject( PyList_GetItem( metdList, i ) );
+              std::string methodStr( PyUnicode_AsUTF8( unicodeobj ) );
+              Py_DECREF( unicodeobj );
 #else
               std::string methodStr( PyString_AsString( PyList_GetItem( metdList, i ) ) );
 #endif
