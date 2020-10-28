@@ -75,7 +75,7 @@ ImageDataPtr ImageDataReceiver::grabVideoStreamData()
   jpeg_finish_decompress( &cinfo_ );
 
   ImageDataPtr mat = new cv::Mat(cinfo_.output_height, cinfo_.output_width, CV_8UC3, imageData_ );
-  cv::cvtColor( *mat, *mat, CV_RGB2BGR );
+  cv::cvtColor( *mat, *mat, cv::COLOR_RGB2BGR );
   return mat;
 }
 
