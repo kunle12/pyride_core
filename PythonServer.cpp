@@ -14,7 +14,7 @@ namespace pyride {
   #define PyInt_Check PyLong_Check
 #endif
 
-static const char goodByeMsg[] = "\r\nGoodbye from UTS PyRIDE Python Console.\r\n";
+static const char goodByeMsg[] = "\r\nGoodbye from PyRIDE Python Console.\r\n";
 
 PythonServer *  PythonServer::s_pPythonServer = NULL;
 
@@ -232,18 +232,59 @@ bool PythonServer::initPyInterpreter()
   }
   else {
 #if PY_MAJOR_VERSION >= 3
+  #if PY_MINOR_VERSION >= 13
+    if (strlen(customPythonHome)) {
+      wchar_t * homeStr = Py_DecodeLocale( customPythonHome, NULL );
+      PyInitConfig * config = PyInitConfig_Create();
+      if (config == NULL) {
+        ERROR_MSG( "PythonServer failed init configuraton failed\n" );
+        PyMem_RawFree( homeStr );
+        return false;
+      }
+      PyInitConfig_SetString( config, &config->python_home, homeStr );
+      // Initialize Python with the configuration
+      if (Py_InitializeFromInitConfig(config) < 0) {
+        const char * err_msg;
+        PyInitConfig_GetError(config, &err_msg);
+        ERROR_MSG("PythonServer failed initialisation error: %s\n", err_msg);
+        PyInitConfig_Free(config);
+        PyMem_RawFree( homeStr );
+        return false;
+      }
+      PyInitConfig_Free(config);
+      PyMem_RawFree( homeStr );
+    }
+  #elif PY_MINOR_VERSION >= 11
+    // Python 3.10, 3.11
+    if (strlen(customPythonHome)) {
+      wchar_t * homeStr = Py_DecodeLocale( customPythonHome, NULL );
+      PyConfig config;
+      PyConfig_InitIsolatedConfig( &config );
+      PyConfig_SetString( &config, &config.home, homeStr );
+      
+      PyStatus status = Py_InitializeFromConfig( &config );
+      if (PyStatus_Exception(status)) {
+        ERROR_MSG("PythonServer failed initialisation\n");
+        PyConfig_Clear( &config );
+        PyMem_RawFree( homeStr );
+        return false;
+      }
+      PyConfig_Clear( &config );
+      PyMem_RawFree( homeStr );
+    }
+  #else
     if (strlen(customPythonHome)) {
       wchar_t * homeStr = Py_DecodeLocale( customPythonHome, NULL );
       Py_SetPythonHome( homeStr );
       PyMem_RawFree( homeStr );
     }
+  #endif
 #else
     if (strlen(customPythonHome)) {
       Py_SetPythonHome( (char *)customPythonHome );
     }
 #endif
     Py_InitializeEx( 0 );
-    PyEval_InitThreads();
   }
   PyThreadState* state = PyThreadState_Get();
   intpState_ = state->interp;
@@ -253,35 +294,57 @@ bool PythonServer::initPyInterpreter()
   std::string userPathStr = scriptPath;
 
   char * evnhome = getenv( "HOME" );
+  std::string userLocalPackagePath = "";
+
   if (evnhome) {
-    std::string userLocalPackagePath = ":";
-    userLocalPackagePath += evnhome; userLocalPackagePath += "/.local/lib/python";
-    userLocalPackagePath += versionStr.substr( 0, versionStr.find_last_of( '.' ) );
-    userPathStr += userLocalPackagePath + "/site-packages";
+    userLocalPackagePath = evnhome;
+    userLocalPackagePath += "/.local/lib/python";
+    userLocalPackagePath += versionStr.substr( 0, versionStr.find_last_of( '.' ) ) + "/site-packages";
+    userPathStr += ":" + userLocalPackagePath;
+  }
+
+  pSysModule_ = PyImport_ImportModule( "sys" );
+
+  if (!pSysModule_) {
+    ERROR_MSG( "PythonServer: Failed to import sys module\n" );
+    return false;
   }
 
 #if PY_MAJOR_VERSION >= 3
-  std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
-  std::wstring packagePath = L":";
-  std::wstring localPackagePath = L":";
-  std::wstring sysPathStr( Py_GetPath() );
+  #if PY_MINOR_VERSION >= 11
+    PyObject* path_list = PyObject_GetAttrString( pSysModule_, "path" );
+    PyObject* script_path = PyUnicode_DecodeFSDefault( scriptPath );
+    if (!userLocalPackagePath.empty()) {
+      PyObject* user_path = PyUnicode_DecodeFSDefault( userLocalPackagePath.c_str() );
+      PyList_Insert( path_list, 0, user_path );
+      Py_XDECREF( user_path );
+    }
+    PyList_Insert( path_list, 0, script_path );
+    Py_XDECREF( script_path );
+    Py_XDECREF( path_list );
+  #else
+    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+    std::wstring packagePath = L":";
+    std::wstring localPackagePath = L":";
+    std::wstring sysPathStr( Py_GetPath() );
 
-  std::wstring versionWStr = converter.from_bytes( versionStr.substr( 0, versionStr.find_last_of( '.' ) ) );
-  std::wstring uPathWStr = converter.from_bytes( userPathStr );
-  packagePath += Py_GetPrefix(); packagePath += L"/lib/python";
-  localPackagePath += Py_GetPrefix(); localPackagePath += L"/local/lib/python";
-  packagePath += versionWStr;
-  localPackagePath += versionWStr;
+    std::wstring versionWStr = converter.from_bytes( versionStr.substr( 0, versionStr.find_last_of( '.' ) ) );
+    std::wstring uPathWStr = converter.from_bytes( userPathStr );
+    packagePath += Py_GetPrefix(); packagePath += L"/lib/python";
+    localPackagePath += Py_GetPrefix(); localPackagePath += L"/local/lib/python";
+    packagePath += versionWStr;
+    localPackagePath += versionWStr;
 
-  size_t delpos = sysPathStr.find( L':' );
-  sysPathStr.replace( 0, delpos, uPathWStr );
+    size_t delpos = sysPathStr.find( L':' );
+    sysPathStr.replace( 0, delpos, uPathWStr );
 
-  sysPathStr += localPackagePath + L"/dist-packages";
-  sysPathStr += localPackagePath + L"/site-packages";
-  sysPathStr += packagePath + L"/dist-packages";
-  sysPathStr += packagePath + L"/site-packages";
+    sysPathStr += localPackagePath + L"/dist-packages";
+    sysPathStr += localPackagePath + L"/site-packages";
+    sysPathStr += packagePath + L"/dist-packages";
+    sysPathStr += packagePath + L"/site-packages";
 
-  PySys_SetPath( (wchar_t*)sysPathStr.c_str() );
+    PySys_SetPath( (wchar_t*)sysPathStr.c_str() );
+  #endif
 #else
   std::string packagePath = ":";
   std::string localPackagePath = ":";
@@ -302,13 +365,6 @@ bool PythonServer::initPyInterpreter()
 
   PySys_SetPath( (char*)sysPathStr.c_str() );
 #endif
-
-  pSysModule_ = PyImport_ImportModule( "sys" );
-
-  if (!pSysModule_) {
-    ERROR_MSG( "PythonServer: Failed to import sys module\n" );
-    return false;
-  }
  
   if (!PyObject_HasAttrString( pSysModule_, "argv" )) {
     PyObject * argObj = PyList_New( 1 );
@@ -320,14 +376,14 @@ bool PythonServer::initPyInterpreter()
     PyObject_SetAttrString( pSysModule_, "argv", argObj );
     Py_DECREF( argObj );
   } 
-  welcomeStr_ = "Welcome to UTS PyRIDE Python Console [Python version ";
+  welcomeStr_ = "Welcome to PyRIDE Python Console [Python version ";
   welcomeStr_ += versionStr + "]";
   
   pMainModule_ = PyImport_AddModule( "__main__" );
   Py_INCREF( pMainModule_ );
   if (!pMainModule_) {
     // we are in deep trouble should abort
-    ERROR_MSG( "%s", "PythonServer failed to import __main__ module" );
+    ERROR_MSG( "PythonServer failed to import __main__ module" );
     return false;
   }
 

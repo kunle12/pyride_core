@@ -16,7 +16,7 @@
 #include <netinet/tcp.h>
 #include <net/if.h>
 #include <sys/socket.h>
-#include <sys/sysctl.h>
+//#include <sys/sysctl.h>
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <sys/time.h>
