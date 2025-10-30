@@ -1856,7 +1856,7 @@ inline bool PyRideNetComm::isNonExclusiveCommand( PyRideExtendedCommand cmd )
 #pragma marker timer implementation
 long PyRideNetComm::addTimer( float initialTime, long repeats, float interval )
 {
-  if (initialTime <= 0.0 || repeats < -1 || interval <= 0.0) {
+  if (initialTime <= 0.0 || repeats < 0 || interval <= 0.0) {
     return -1; // invalid. no timer is created.
   }
 
