@@ -7,8 +7,8 @@
  */
 
 #include <sys/time.h>
+#include <functional>
 
-#include <boost/lexical_cast.hpp>
 #include "async_web_server_cpp/http_reply.hpp"
 
 #include "VideoToWebBridge.h"
@@ -51,8 +51,8 @@ VideoToWebBridge::VideoToWebBridge() :
   handler_group_(
           async_web_server_cpp::HttpReply::stock_reply( async_web_server_cpp::HttpReply::not_found ) )
 {
-  handler_group_.addHandlerForPath("/", boost::bind(&VideoToWebBridge::handle_list_streams, this, _1, _2, _3, _4));
-  handler_group_.addHandlerForPath("/stream", boost::bind(&VideoToWebBridge::handle_stream, this, _1, _2, _3, _4));
+  handler_group_.addHandlerForPath("/", std::bind(&VideoToWebBridge::handle_list_streams, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+  handler_group_.addHandlerForPath("/stream", std::bind(&VideoToWebBridge::handle_stream, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
   //handler_group_.addHandlerForPath("/stream_viewer",
   //                                 boost::bind(&VideoToWebBridge::handle_stream_viewer, this, _1, _2, _3, _4));
   //handler_group_.addHandlerForPath("/snapshot", boost::bind(&VideoToWebBridge::handle_snapshot, this, _1, _2, _3, _4));
@@ -88,15 +88,15 @@ bool VideoToWebBridge::start()
   gettimeofday( &now, NULL );
   dataTS_ = now.tv_sec;
 
-  streaming_data_thread_ = new boost::thread( &VideoToWebBridge::grabAndDispatchVideoStreamData, this );
+  streaming_data_thread_ = new std::thread( &VideoToWebBridge::grabAndDispatchVideoStreamData, this );
 
   try {
     server_.reset(
-        new async_web_server_cpp::HttpServer(address_, boost::lexical_cast<std::string>(port_),
-                                             boost::bind( web_logger, handler_group_, _1, _2, _3, _4),
+        new async_web_server_cpp::HttpServer(address_, std::to_string(port_),
+                                             std::bind( web_logger, handler_group_, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4),
                                              server_threads_ ));
   }
-  catch (boost::exception& e) {
+  catch (std::exception& e) {
     ERROR_MSG( "Exception when creating the web server! %s:%d.\n", address_.c_str(), port_);
     return false;
   }
@@ -161,8 +161,8 @@ bool VideoToWebBridge::handle_stream( const async_web_server_cpp::HttpRequest &r
 {
   std::string type = request.get_query_param_value_or_default( "type", "mjpeg" );
   if (type.compare( "mjpeg" ) == 0) {
-    boost::mutex::scoped_lock lock( subscriber_mutex_ );
-    image_subscribers_.push_back( boost::shared_ptr<JpegImageStreamer>(new JpegImageStreamer( request, connection )) );
+    std::lock_guard<std::mutex> lock( subscriber_mutex_ );
+    image_subscribers_.push_back( std::shared_ptr<JpegImageStreamer>(new JpegImageStreamer( request, connection )) );
   }
   else {
     async_web_server_cpp::HttpReply::stock_reply(async_web_server_cpp::HttpReply::not_found)( request, connection, begin,
@@ -263,9 +263,9 @@ void VideoToWebBridge::grabAndDispatchVideoStreamData()
     //DEBUG_MSG( "Got video data %d %lu %lu.\n", dataSize, now.tv_sec, now.tv_usec );
     std::vector<unsigned char> dispatchdata( data, data+dataSize );
     {
-      boost::mutex::scoped_lock lock( subscriber_mutex_, boost::try_to_lock );
+      std::unique_lock<std::mutex> lock( subscriber_mutex_, std::try_to_lock );
       if (lock) {
-        typedef std::vector<boost::shared_ptr<JpegImageStreamer> >::iterator itr_type;
+        typedef std::vector<std::shared_ptr<JpegImageStreamer> >::iterator itr_type;
         //itr_type new_end = std::remove_if(image_subscribers_.begin(), image_subscribers_.end(),
         //                                  boost::bind(&ImageStreamer::isInactive, _1));
         for (itr_type iter = image_subscribers_.begin(); iter != image_subscribers_.end();) {
@@ -276,7 +276,7 @@ void VideoToWebBridge::grabAndDispatchVideoStreamData()
               (*iter)->sendImage( ts, dispatchdata );
             }
           }
-          catch (boost::system::system_error &e) {
+          catch (const std::system_error &e) {
             // happens when client disconnects
             INFO_MSG( "client disconnect: %s.\n", e.what() );
             inerror = true;
@@ -331,13 +331,13 @@ void MultipartStream::sendInitialHeader() {
 void MultipartStream::sendPartHeader( const double time, const std::string & type, size_t payload_size) {
   char stamp[20];
   sprintf( stamp, "%.06lf", time );
-  boost::shared_ptr<std::vector<async_web_server_cpp::HttpHeader> > headers(
-      new std::vector<async_web_server_cpp::HttpHeader>());
+  std::shared_ptr<std::vector<async_web_server_cpp::HttpHeader> > headers(
+      std::make_shared<std::vector<async_web_server_cpp::HttpHeader>>());
 
   headers->push_back( async_web_server_cpp::HttpHeader("Content-type", type ) );
   headers->push_back( async_web_server_cpp::HttpHeader("X-Timestamp", stamp ) );
   headers->push_back(
-      async_web_server_cpp::HttpHeader("Content-Length", boost::lexical_cast<std::string>(payload_size)));
+      async_web_server_cpp::HttpHeader("Content-Length", std::to_string(payload_size)));
   connection_->write(async_web_server_cpp::HttpReply::to_buffers(*headers), headers);
 }
 

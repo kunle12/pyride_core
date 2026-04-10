@@ -40,21 +40,21 @@
 
 #if defined( IOS_BUILD )
 #define PYRIDE_LOGGING_INIT
-#define DEBUG_MSG( MSG... ) \
+#define DEBUG_MSG( ... ) \
   printf( "DEBUG: " ); \
-  printf( MSG );
+  printf( __VA_ARGS__ );
 
-#define ERROR_MSG( MSG... )  \
+#define ERROR_MSG( ... )  \
   printf( "ERROR: " ); \
-  printf( MSG );
+  printf( __VA_ARGS__ );
 
-#define WARNING_MSG( MSG... )  \
+#define WARNING_MSG( ... )  \
   printf( "WARNING: " ); \
-  printf( MSG );
+  printf( __VA_ARGS__ );
 
-#define INFO_MSG( MSG... )  \
+#define INFO_MSG( ... )  \
   printf( "INFO: " ); \
-  printf( MSG );
+  printf( __VA_ARGS__ );
 
 #else // !IOS_BUILD
 #ifdef WIN32
@@ -116,41 +116,41 @@ s_pyridelog = fopen( logFileName, "a" )
 //#define s_pyridelog stdout
 
 #ifdef PRODUCT_RELEASE
-#define DEBUG_MSG( MSG... )
+#define DEBUG_MSG( ... )
 #else
-#define DEBUG_MSG( MSG... ) \
+#define DEBUG_MSG( ... ) \
 if (s_pyridelog) { \
   struct timeval now; \
   gettimeofday( &now, NULL ); \
   fprintf( s_pyridelog, "[%ld%c%ld] DEBUG: ", (long)now.tv_sec, 46, (long)now.tv_usec ); \
-  fprintf( s_pyridelog, MSG ); \
+  fprintf( s_pyridelog, __VA_ARGS__ ); \
   fflush( s_pyridelog ); \
 }
 #endif
 
-#define INFO_MSG( MSG... ) \
+#define INFO_MSG( ... ) \
 if (s_pyridelog) { \
   struct timeval now; \
   gettimeofday( &now, NULL ); \
   fprintf( s_pyridelog, "[%ld%c%ld] INFO: ", (long)now.tv_sec, 46, (long)now.tv_usec ); \
-  fprintf( s_pyridelog, MSG ); \
+  fprintf( s_pyridelog, __VA_ARGS__ ); \
   fflush( s_pyridelog ); \
 }
 
-#define WARNING_MSG( MSG... ) \
+#define WARNING_MSG( ... ) \
 if (s_pyridelog) { \
   struct timeval now; \
   gettimeofday( &now, NULL ); \
   fprintf( s_pyridelog, "[%ld%c%ld] WARNING: ", (long)now.tv_sec, 46, (long)now.tv_usec ); \
-  fprintf( s_pyridelog, MSG ); \
+  fprintf( s_pyridelog, __VA_ARGS__ ); \
   fflush( s_pyridelog ); \
 }
-#define ERROR_MSG( MSG... ) \
+#define ERROR_MSG( ... ) \
 if (s_pyridelog) { \
   struct timeval now; \
   gettimeofday( &now, NULL ); \
   fprintf( s_pyridelog, "[%ld%c%ld] ERROR: ", (long)now.tv_sec, 46, (long)now.tv_usec ); \
-  fprintf( s_pyridelog, MSG ); \
+  fprintf( s_pyridelog, __VA_ARGS__ ); \
   fflush( s_pyridelog ); \
 }
 

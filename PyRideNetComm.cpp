@@ -658,7 +658,9 @@ void PyRideNetComm::fini()
 #endif
 }
 
+#ifdef __APPLE__
 #pragma mark message processing
+#endif
 void PyRideNetComm::processDataInput( ClientItem * client, const unsigned char * receivedMesg,
                                       const int receivedBytes )
 {
@@ -856,22 +858,26 @@ void PyRideNetComm::disconnectClient( ClientItem * client, bool sendNotification
     pthread_mutex_lock( &t_mutex_ );
 #endif
     if (client) {
-      if (client->fd != INVALID_SOCKET)
+      if (client->fd != INVALID_SOCKET) {
 #ifdef WIN32
         send( client->fd, (char*)dispatchDataBuffer_, outputLength, 0 );
 #else
         ssize_t retval = ::write( client->fd, dispatchDataBuffer_, outputLength );
+        (void)retval;
 #endif
+      }
     }
     else {
       ClientItem * fdPtr = clientList_;
       while (fdPtr) {
-        if (fdPtr->fd != INVALID_SOCKET)
+        if (fdPtr->fd != INVALID_SOCKET) {
 #ifdef WIN32
           send( fdPtr->fd, (char*)dispatchDataBuffer_, outputLength, 0 );
 #else
           ssize_t retval = ::write( fdPtr->fd, dispatchDataBuffer_, outputLength );
+          (void)retval;
 #endif
+        }
         fdPtr = fdPtr->pNext;
       }
     }
@@ -1231,7 +1237,9 @@ void PyRideNetComm::processOperationalData( ClientItem * client, const unsigned 
 
 }
 #else //!PYRIDE_REMOTE_CLIENT
+#ifdef __APPLE__
 #pragma mark Robot robot side implementation
+#endif
 void PyRideNetComm::declareRobot( const RobotInfo * robotInfo )
 {
   this->declareRobot( robotInfo, NULL );
@@ -1589,6 +1597,7 @@ void PyRideNetComm::clientDataSend( const int command, const int subcommand,
 #else
       //DEBUG_MSG( "sending total packet size %d, data count %d\n", outputLength, opl );
       ssize_t retval = ::write( client->fd, dispatchDataBuffer_, outputLength );
+      (void)retval;
 #endif
     }
     else {
@@ -1599,6 +1608,7 @@ void PyRideNetComm::clientDataSend( const int command, const int subcommand,
           send( cPtr->fd, (char*)dispatchDataBuffer_, outputLength, 0 );
 #else
           ssize_t retval = ::write( cPtr->fd, dispatchDataBuffer_, outputLength );
+          (void)retval;
 #endif
         }
         cPtr = cPtr->pNext;
@@ -1853,7 +1863,9 @@ inline bool PyRideNetComm::isNonExclusiveCommand( PyRideExtendedCommand cmd )
   return false;
 }
 
-#pragma marker timer implementation
+#ifdef __APPLE__
+#pragma mark timer implementation
+#endif
 long PyRideNetComm::addTimer( float initialTime, long repeats, float interval )
 {
   if (initialTime <= 0.0 || repeats < 0 || interval <= 0.0) {

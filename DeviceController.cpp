@@ -86,7 +86,7 @@ bool DeviceController::getUDPSourcePorts( short & dataport, short & ctrlport )
   bool found = false;
   
   int xLen = sizeof( xAddr );
-  int maxFD = 0, localMaxFD, readLen;
+  int maxFD = 0, localMaxFD;
   fd_set  masterFDSet;
   fd_set readyFDSet;
   
@@ -140,12 +140,12 @@ bool DeviceController::getUDPSourcePorts( short & dataport, short & ctrlport )
     select( localMaxFD + 1, &readyFDSet, NULL, NULL, &timeout );
     
     if (FD_ISSET( controlSocket, &readyFDSet )) {
-      readLen = recvfrom( controlSocket, dataBuffer, 200,
+      (void)recvfrom( controlSocket, dataBuffer, 200,
                          0, (sockaddr *)&xAddr, (socklen_t *)&xLen );
       dataport = xAddr.sin_port;
     }
     if (FD_ISSET( dataSocket, &readyFDSet )) {
-      readLen = recvfrom( dataSocket, dataBuffer, 20,
+      (void)recvfrom( dataSocket, dataBuffer, 20,
                          0, (sockaddr *)&xAddr, (socklen_t *)&xLen );
       ctrlport = xAddr.sin_port;
     }
@@ -351,7 +351,7 @@ void VideoDevice::setProcessParameters()
   cinfo_.input_components = 3;
   cinfo_.in_color_space = JCS_RGB;
   jpeg_set_defaults( &cinfo_ );
-  jpeg_set_quality( &cinfo_, kCompressionRate[vSettings_.resolution], TRUE );
+  jpeg_set_quality( &cinfo_, kCompressionRate[static_cast<int>(vSettings_.resolution)], TRUE );
 }
 
 bool VideoDevice::start( struct sockaddr_in & cAddr, unsigned short cDataPort )
@@ -476,6 +476,7 @@ bool VideoDevice::processImageData( const unsigned char * rawData, const int raw
 
 int VideoDevice::compressToJPEG( const unsigned char * imageData, const int imageDataSize, unsigned char * & compressedData )
 {
+  (void)imageDataSize;
   JSAMPROW rowPtr[1];
   unsigned char * data = (unsigned char *)imageData;
 #ifdef JPEG62

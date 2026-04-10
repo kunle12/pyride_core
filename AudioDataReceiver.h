@@ -9,11 +9,11 @@
 #ifndef AUDIO_DATA_RECEIVER_H
 #define AUDIO_DATA_RECEIVER_H
 
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
+#include <memory>
+#include <mutex>
+#include <thread>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <opus/opus.h>
 

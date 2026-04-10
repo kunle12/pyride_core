@@ -80,6 +80,9 @@ class AudioDevice : public DeviceController
 public:
   AudioDevice();
   virtual ~AudioDevice();
+
+  using DeviceController::start;
+  using DeviceController::stop;
   
   virtual bool start( struct sockaddr_in & cAddr, unsigned short cDataPort = PYRIDE_VIDEO_STREAM_BASE_PORT + 2 );
   virtual bool stop( struct sockaddr_in & cAddr, unsigned short cDataPort = PYRIDE_VIDEO_STREAM_BASE_PORT + 2 );
@@ -109,7 +112,7 @@ public:
   VideoDeviceDataHandler() {}
   virtual ~VideoDeviceDataHandler() {}
 
-  virtual void onSnapshotImage( const string & imageName ) {}
+  virtual void onSnapshotImage( const string & imageName ) {(void)imageName;}
 };
 
 class VideoDevice : public DeviceController
@@ -118,11 +121,14 @@ public:
   VideoDevice();
   virtual ~VideoDevice();
 
+  using DeviceController::start;
+  using DeviceController::stop;
+
   virtual bool start( struct sockaddr_in & cAddr, unsigned short cDataPort = PYRIDE_VIDEO_STREAM_BASE_PORT );
   virtual bool stop( struct sockaddr_in & cAddr, unsigned short cDataPort = PYRIDE_VIDEO_STREAM_BASE_PORT );
 
-  virtual bool setCameraParameter( int pid, int value ) { return true; }
-  virtual void takeSnapshot( const VideoDeviceDataHandler * dataHandler ) {}
+  virtual bool setCameraParameter( int pid, int value ) { (void)pid; (void)value; return true; }
+  virtual void takeSnapshot( const VideoDeviceDataHandler * dataHandler ) { (void)dataHandler; }
   
   void getVideoSettings( VideoSettings & settings );
   void setImageFormat( ImageFormat format ) { vSettings_.format = format; }

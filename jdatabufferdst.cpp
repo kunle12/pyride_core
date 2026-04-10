@@ -81,6 +81,7 @@ boolean empty_output_buffer( j_compress_ptr cinfo )
 
 void term_destination( j_compress_ptr cinfo )
 {
+  (void)cinfo;
 }
 
 /*

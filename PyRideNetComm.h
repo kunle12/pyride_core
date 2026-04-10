@@ -57,8 +57,8 @@ public:
 
 protected:
   char clientID_;
-  virtual void onTimer( const long tID ) {}
-  virtual void onTimerLapsed( const long tID ) {}
+  virtual void onTimer( const long tID ) { (void)tID; }
+  virtual void onTimerLapsed( const long tID ) { (void)tID; }
 
 #ifdef PYRIDE_REMOTE_CLIENT
   virtual void onRobotCreated( const char cID, const int ipAddr, const RobotInfo * rinfo,
@@ -84,14 +84,14 @@ protected:
 #else
   int telemetryClients_;
   
-  virtual void onTelemetryStreamControl( bool isStart ) {};
+  virtual void onTelemetryStreamControl( bool isStart ) { (void)isStart; }
 
   virtual bool executeRemoteCommand( const unsigned char * commandData, const int dataLength, int & retVal ) = 0;
   virtual void cancelCurrentOperation() = 0;
-  virtual bool onUserLogOn( const unsigned char * authCode, SOCKET_T fd, struct sockaddr_in & addr ) { return false; }
-  virtual void onUserLogOff( SOCKET_T fd ) {}
-  virtual int onExclusiveCtrlRequest( SOCKET_T fd ) { return 0; }
-  virtual void onExclusiveCtrlRelease( SOCKET_T fd ) {}
+  virtual bool onUserLogOn( const unsigned char * authCode, SOCKET_T fd, struct sockaddr_in & addr ) { (void)authCode; (void)fd; (void)addr; return false; }
+  virtual void onUserLogOff( SOCKET_T fd ) { (void)fd; }
+  virtual int onExclusiveCtrlRequest( SOCKET_T fd ) { (void)fd; return 0; }
+  virtual void onExclusiveCtrlRelease( SOCKET_T fd ) { (void)fd; }
 #endif
 
 private:

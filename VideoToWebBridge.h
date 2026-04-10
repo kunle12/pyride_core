@@ -10,9 +10,9 @@
 #define VIDEO_TO_WEB_BRIDGE_H
 
 #include <vector>
-#include <boost/shared_ptr.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
+#include <memory>
+#include <mutex>
+#include <thread>
 
 #include "async_web_server_cpp/http_server.hpp"
 #include "async_web_server_cpp/http_request.hpp"
@@ -86,12 +86,12 @@ private:
   RTPDataReceiver * dataStream_;
   PyModuleExtension * pyExtension_;
 
-  boost::thread * streaming_data_thread_;
+  std::thread * streaming_data_thread_;
 
-  boost::shared_ptr<async_web_server_cpp::HttpServer> server_;
+  std::shared_ptr<async_web_server_cpp::HttpServer> server_;
   async_web_server_cpp::HttpRequestHandlerGroup handler_group_;
-  std::vector<boost::shared_ptr<JpegImageStreamer> > image_subscribers_;
-  boost::mutex subscriber_mutex_;
+  std::vector<std::shared_ptr<JpegImageStreamer> > image_subscribers_;
+  std::mutex subscriber_mutex_;
 
   static VideoToWebBridge * s_pVideoToWebBridge;
 

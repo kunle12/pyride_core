@@ -31,16 +31,16 @@ protected:
                                     const unsigned char * optinalData = NULL,
                                     const int optionalDataLength = 0 ) = 0;
   virtual void cancelCurrentOperation() = 0;
-  virtual bool onUserLogOn( const std::string & name ) { return false; }
-  virtual void onUserLogOff( const std::string & name ) {}
+  virtual bool onUserLogOn( const std::string & name ) { (void)name; return false; }
+  virtual void onUserLogOff( const std::string & name ) { (void)name; }
 
-  virtual int onExclusiveCtrlRequest( const std::string & name ) { return 0; }
-  virtual void onExclusiveCtrlRelease( const std::string & name ) {}
+  virtual int onExclusiveCtrlRequest( const std::string & name ) { (void)name; return 0; }
+  virtual void onExclusiveCtrlRelease( const std::string & name ) { (void)name; }
 
-  virtual void onTimer( const long timerID ) {}
-  virtual void onTimerLapsed( const long timerID ) {}
+  virtual void onTimer( const long timerID ) { (void)timerID; }
+  virtual void onTimerLapsed( const long timerID ) { (void)timerID; }
 
-  virtual void onTelemetryStreamControl( bool isStart ) {};
+  virtual void onTelemetryStreamControl( bool isStart ) { (void)isStart; };
   
   friend class ServerDataProcessor;
 };
