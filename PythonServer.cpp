@@ -863,11 +863,11 @@ bool PythonServer::messageValidation( const unsigned char * receivedMesg, const 
 {
   cID = command = subcommand = 0;
   
-  //DEBUG_MSG( "Received %d bytes, header as %X|%X|%X|%X%X\n", receivedBytes, 
-  //receivedMesg[0], receivedMesg[1], receivedMesg[2], receivedMesg[3], receivedMesg[4]);
+  if (!receivedMesg || receivedBytes < PYRIDE_MSG_MIN_LENGTH) {
+    return false;
+  }
   
-  if (receivedBytes < PYRIDE_MSG_MIN_LENGTH ||
-      receivedMesg[0] != PYRIDE_MSG_INIT ||
+  if (receivedMesg[0] != PYRIDE_MSG_INIT ||
       receivedMesg[1] != PYRIDE_PROTOCOL_VERSION ||
       receivedMesg[receivedBytes-1] != PYRIDE_MSG_END)
   {
@@ -876,7 +876,7 @@ bool PythonServer::messageValidation( const unsigned char * receivedMesg, const 
   
   cID = receivedMesg[2];
   command = (receivedMesg[3] >> 4) & 0x0f;
-  subcommand = receivedMesg[3] & 0x0f;
+  subcommand = receivedMesg[3] & 0x0f;  
   return true;
 }
 

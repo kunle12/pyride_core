@@ -327,6 +327,10 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
         ERROR_MSG( "PyRideNetComm::continuousProcessing: error accepting "
           "incoming UDP packet. error %d\n", errno );
       }
+      else if (readLen > PYRIDE_DEFAULT_BUFFER_SIZE) {
+        ERROR_MSG( "PyRideNetComm::continuousProcessing: UDP packet too large (%d bytes), max %d\n",
+          readLen, PYRIDE_DEFAULT_BUFFER_SIZE );
+      }
       else {
         processUDPInput( dgramBuffer_, readLen, cAddr );
       }
@@ -382,9 +386,15 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
             }
             dataPtr++;
             short dataCount = 0;
-            memcpy( &dataCount, dataPtr, sizeof( short ) ); dataPtr += sizeof( short );
+            memcpy( &dataCount, dataPtr, sizeof( short ) );
+            if (dataCount < 0) {
+              ERROR_MSG( "PyRideNetComm::continuousProcessing: "
+                        "negative data count %d on fd %d.\n", (int)dataCount, (int)fd );
+              break;
+            }
+            dataPtr += sizeof( short );
             readLen -= 3;
-            if (dataCount < 0 || dataCount > PYRIDE_MSG_BUFFER_SIZE) { // encryption buffer size
+            if (dataCount > PYRIDE_MSG_BUFFER_SIZE) { // encryption buffer size
               ERROR_MSG( "PyRideNetComm::continuousProcessing: "
                         "invalid data size in stream on %d.\n", (int)fd );
               break;
@@ -407,15 +417,30 @@ void PyRideNetComm::processIncomingData( fd_set * readyFDSet )
             }
           }
           else if (clientPtr->dataInfo.expectedDataLength > 0) { // patch up cached data
+            if (readLen <= 0) {
+              ERROR_MSG( "PyRideNetComm::continuousProcessing: "
+                        "no data to cache on fd %d.\n", (int)fd );
+              clientPtr->dataInfo.expectedDataLength = 0;
+              clientPtr->dataInfo.bufferedDataLength = 0;
+              break;
+            }
             unsigned char * cachedPtr = clientPtr->dataInfo.bufferedData + clientPtr->dataInfo.bufferedDataLength;
             if (clientPtr->dataInfo.expectedDataLength > (readLen - 1)) { // continue to cache
-              memcpy( cachedPtr, dataPtr, readLen );
-              clientPtr->dataInfo.bufferedDataLength += readLen;
-              clientPtr->dataInfo.expectedDataLength -= readLen;
+              size_t copyLen = static_cast<size_t>(readLen);
+              if (clientPtr->dataInfo.bufferedDataLength + copyLen > PYRIDE_MSG_BUFFER_SIZE) {
+                ERROR_MSG( "PyRideNetComm::continuousProcessing: "
+                          "buffer overflow on fd %d.\n", (int)fd );
+                clientPtr->dataInfo.expectedDataLength = 0;
+                clientPtr->dataInfo.bufferedDataLength = 0;
+                break;
+              }
+              memcpy( cachedPtr, dataPtr, copyLen );
+              clientPtr->dataInfo.bufferedDataLength += static_cast<int>(copyLen);
+              clientPtr->dataInfo.expectedDataLength -= static_cast<int>(copyLen);
               readLen = 0;
             }
             else if (*(dataPtr + clientPtr->dataInfo.expectedDataLength) == PYRIDE_MSG_END) { // valid message
-              memcpy( cachedPtr, dataPtr, clientPtr->dataInfo.expectedDataLength );
+              memcpy( cachedPtr, dataPtr, static_cast<size_t>(clientPtr->dataInfo.expectedDataLength) );
               this->processDataInput( clientPtr, clientPtr->dataInfo.bufferedData,
                                      clientPtr->dataInfo.bufferedDataLength + clientPtr->dataInfo.expectedDataLength );
               readLen -= (clientPtr->dataInfo.expectedDataLength + 1);
@@ -701,7 +726,6 @@ void PyRideNetComm::processDataInput( ClientItem * client, const unsigned char *
         DEBUG_MSG( "receive robot declare %s\n", addressStr );
          */
         if (pDataHandler_ && commandDataLen >= int(sizeof( RobotInfo ) + 1)) {
-          // DEBUG_MSG( "correct declare structure\n" );
           RobotInfo rinfo;
           VideoSettings vsettings;
           AudioSettings asettings;
@@ -715,12 +739,29 @@ void PyRideNetComm::processDataInput( ClientItem * client, const unsigned char *
           dataPtr += sizeof( RobotInfo );
           int optLabelLength = commandDataLen - sizeof( RobotInfo );
 
+          if (rinfo.nofaudios < 0 || rinfo.nofaudios > 8) {
+            ERROR_MSG( "PyRideNetComm: invalid nofaudios %d in robot declaration\n", rinfo.nofaudios );
+            break;
+          }
+          if (rinfo.nofcams < 0 || rinfo.nofcams > 8) {
+            ERROR_MSG( "PyRideNetComm: invalid nofcams %d in robot declaration\n", rinfo.nofcams );
+            break;
+          }
+
           if (rinfo.nofaudios > 0) {
+            if (optLabelLength < static_cast<int>(sizeof( AudioSettings ))) {
+              ERROR_MSG( "PyRideNetComm: not enough data for AudioSettings\n" );
+              break;
+            }
             memcpy( &asettings, dataPtr, sizeof( AudioSettings ));
             dataPtr += sizeof( AudioSettings );
             optLabelLength -= sizeof( AudioSettings ) ;
           }
           if (rinfo.nofcams > 0) {
+            if (optLabelLength < static_cast<int>(sizeof( VideoSettings ))) {
+              ERROR_MSG( "PyRideNetComm: not enough data for VideoSettings\n" );
+              break;
+            }
             memcpy( &vsettings, dataPtr, sizeof( VideoSettings ));
             optionalLabels = dataPtr + sizeof( VideoSettings );
             optLabelLength -= sizeof( VideoSettings );
@@ -977,11 +1018,11 @@ bool PyRideNetComm::messageValidation( const unsigned char * receivedMesg, const
 {
   cID = command = subcommand = 0;
   
-  //DEBUG_MSG( "Received %d bytes, header as %X|%X|%X|%X%X\n", receivedBytes, 
-  //receivedMesg[0], receivedMesg[1], receivedMesg[2], receivedMesg[3], receivedMesg[4]);
+  if (!receivedMesg || receivedBytes < PYRIDE_MSG_MIN_LENGTH) {
+    return false;
+  }
   
-  if (receivedBytes < PYRIDE_MSG_MIN_LENGTH ||
-      receivedMesg[0] != PYRIDE_MSG_INIT ||
+  if (receivedMesg[0] != PYRIDE_MSG_INIT ||
       receivedMesg[1] != PYRIDE_PROTOCOL_VERSION ||
       receivedMesg[receivedBytes-1] != PYRIDE_MSG_END)
   {
