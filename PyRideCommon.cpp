@@ -23,6 +23,7 @@
 #else
 #include <pthread.h>
 #endif
+#include <cstdlib>
 
 #define ENCRYPTION_KEY_LENGTH  32
 #define PYRIDE_MSG_ENDECRYPT_BUFFER_SIZE       (PYRIDE_MSG_BUFFER_SIZE - 4)
@@ -119,11 +120,25 @@ void endecryptInit()
   size_t keyLen = 0;
   if (encrypt_key) {
     free( encrypt_key );
+    encrypt_key = NULL;
   }
-  encrypt_key = decodeBase64( (char *)encrypt_key_text, &keyLen );
+
+  const unsigned char * key_source = encrypt_key_text;
+  const char * env_key = getenv( "PYRIDE_ENCRYPT_KEY" );
+  if (env_key && strlen( env_key ) > 0) {
+    INFO_MSG( "Using encryption key from PYRIDE_ENCRYPT_KEY environment variable.\n" );
+    key_source = (const unsigned char *)env_key;
+  } else {
+    WARNING_MSG( "Using default hardcoded encryption key. Set PYRIDE_ENCRYPT_KEY environment variable for production.\n" );
+  }
+
+  encrypt_key = decodeBase64( (const char *)key_source, &keyLen );
   
   if (keyLen != ENCRYPTION_KEY_LENGTH) {
-    //ERROR_MSG( "Encryption key decode error.\n" );
+    if (env_key) {
+      ERROR_MSG( "Failed to decode custom encryption key from PYRIDE_ENCRYPT_KEY. Using fallback.\n" );
+    }
+    encrypt_key = decodeBase64( (const char *)encrypt_key_text, &keyLen );
   }
   
   if (!encryptbuffer) {
