@@ -70,6 +70,7 @@
 /**@{*/
 static PyObject * PyModule_declare( PyObject * self )
 {
+  (void)self;
   ServerDataProcessor::instance()->discoverConsoles();
   Py_RETURN_NONE;
 }
@@ -82,6 +83,7 @@ static PyObject * PyModule_declare( PyObject * self )
  */
 static PyObject * PyModule_disconnect( PyObject * self, PyObject * args )
 {
+  (void)self;
   char * username = NULL;
 
   if (!PyArg_ParseTuple( args, "|s", &username )) {
@@ -118,6 +120,7 @@ static PyObject * PyModule_disconnect( PyObject * self, PyObject * args )
  */
 static PyObject * PyModule_BlockRemoteExclusiveControl( PyObject * self, PyObject * args )
 {
+  (void)self;
   PyObject * isYesObj = NULL;
 
   if (!PyArg_ParseTuple( args, "O", &isYesObj )) {
@@ -143,6 +146,7 @@ static PyObject * PyModule_BlockRemoteExclusiveControl( PyObject * self, PyObjec
 /**@}*/
 static PyObject * PyModule_UpdateOperationalStatus( PyObject * self, PyObject * args )
 {
+  (void)self;
   int state;
   char * dataStr = NULL;
 
@@ -181,6 +185,7 @@ static PyObject * PyModule_UpdateOperationalStatus( PyObject * self, PyObject * 
  */
 static PyObject * PyModule_TakeCameraSnapshot( PyObject * self, PyObject * args )
 {
+  (void)self;
   PyObject * takeAllObj = NULL;
 
   if (!PyArg_ParseTuple( args, "|O", &takeAllObj )) {
@@ -204,6 +209,7 @@ static PyObject * PyModule_TakeCameraSnapshot( PyObject * self, PyObject * args 
 /**@}*/
 static PyObject * PyModule_GetMyIPAddress( PyObject * self )
 {
+  (void)self;
   struct in_addr myaddr;
   myaddr.s_addr = ntohl( ServerDataProcessor::instance()->getMyIPAddress() );
   if (myaddr.s_addr) {
@@ -216,6 +222,7 @@ static PyObject * PyModule_GetMyIPAddress( PyObject * self )
 
 static PyObject * PyModule_UpdateRobotTelemetry( PyObject * self, PyObject * args )
 {
+  (void)self;
   float pos_x, pos_y, pos_theta;
 
   if (!PyArg_ParseTuple( args, "fff", &pos_x, &pos_y, &pos_theta )) {
@@ -240,6 +247,7 @@ static PyObject * PyModule_UpdateRobotTelemetry( PyObject * self, PyObject * arg
  */
 static PyObject * PyModule_ListCurrentUsers( PyObject * self )
 {
+  (void)self;
   std::vector<std::string> userList;
 
   int nofusers = AppConfigManager::instance()->listCurrentUsers( userList );
@@ -261,6 +269,7 @@ static PyObject * PyModule_ListCurrentUsers( PyObject * self )
  */
 static PyObject * PyModule_ListAllUsers( PyObject * self )
 {
+  (void)self;
   std::vector<std::string> userList;
 
   int nofusers = AppConfigManager::instance()->listAllUsers( userList );
@@ -282,6 +291,7 @@ static PyObject * PyModule_ListAllUsers( PyObject * self )
  */
 static PyObject * PyModule_SaveConfiguration( PyObject * self )
 {
+  (void)self;
   AppConfigManager::instance()->saveConfig();
   Py_RETURN_NONE;
 }
@@ -295,6 +305,7 @@ static PyObject * PyModule_SaveConfiguration( PyObject * self )
  */
 static PyObject * PyModule_AddUser( PyObject * self, PyObject * args )
 {
+  (void)self;
   char * nameStr = NULL;
   char * passwordStr = NULL;
 
@@ -318,6 +329,7 @@ static PyObject * PyModule_AddUser( PyObject * self, PyObject * args )
  */
 static PyObject * PyModule_RemoveUser( PyObject * self, PyObject * args )
 {
+  (void)self;
   char * nameStr = NULL;
 
   if (!PyArg_ParseTuple( args, "s", &nameStr )) {
@@ -342,6 +354,7 @@ static PyObject * PyModule_RemoveUser( PyObject * self, PyObject * args )
 /**@}*/
 static PyObject * PyModule_ChangeUserPassword( PyObject * self, PyObject * args )
 {
+  (void)self;
   char * nameStr = NULL;
   char * newPasswordPtr = NULL;
   char * oldPasswordPtr = NULL;
@@ -372,6 +385,7 @@ static PyObject * PyModule_ChangeUserPassword( PyObject * self, PyObject * args 
  */
 static PyObject * PyModule_AddTimer( PyObject * self, PyObject * args )
 {
+  (void)self;
   float initTime;
   long repeats = 0;
   float interval = 1.0;
@@ -400,6 +414,7 @@ static PyObject * PyModule_AddTimer( PyObject * self, PyObject * args )
  */
 static PyObject * PyModule_RemoveTimer( PyObject * self, PyObject * args )
 {
+  (void)self;
   long timerID;
 
   if (!PyArg_ParseTuple( args, "l", &timerID )) {
@@ -437,6 +452,7 @@ static PyObject * PyModule_RemoveTimer( PyObject * self, PyObject * args )
  */
 static PyObject * PyModule_IsTimerRunning( PyObject * self, PyObject * args )
 {
+  (void)self;
   long timerID;
 
   if (!PyArg_ParseTuple( args, "l", &timerID )) {
@@ -464,6 +480,7 @@ static PyObject * PyModule_IsTimerRunning( PyObject * self, PyObject * args )
  */
 static PyObject * PyModule_IsTimerExecuting( PyObject * self, PyObject * args )
 {
+  (void)self;
   long timerID;
 
   if (!PyArg_ParseTuple( args, "l", &timerID )) {
@@ -491,6 +508,7 @@ static PyObject * PyModule_IsTimerExecuting( PyObject * self, PyObject * args )
 /**@}*/
 static PyObject * PyModule_RemoveAllTimers( PyObject * self )
 {
+  (void)self;
   for (size_t i = 0; i < g_PyModuleTimerList.size(); i++) {
     ServerDataProcessor::instance()->delTimer( g_PyModuleTimerList[i] );
   }
@@ -500,6 +518,7 @@ static PyObject * PyModule_RemoveAllTimers( PyObject * self )
 
 static PyObject * PyModule_ActiveVideoObjects( PyObject * self )
 {
+  (void)self;
   std::vector<std::string> deviceList;
 
   int nofdevice = ServerDataProcessor::instance()->activeVideoObjectList( deviceList );
@@ -518,6 +537,7 @@ static const char *kDispatchAudioKWlist[] = { "host", "port", "todispatch", NULL
 
 static PyObject * PyModule_DispatchVideoData( PyObject * self, PyObject * args, PyObject * keywds )
 {
+  (void)self;
   int devid = -1;
   char * hostname = NULL;
   int port = 0;
@@ -578,6 +598,7 @@ static PyObject * PyModule_DispatchVideoData( PyObject * self, PyObject * args, 
 
 static PyObject * PyModule_DispatchAudioData( PyObject * self, PyObject * args, PyObject * keywds )
 {
+  (void)self;
   char * hostname = NULL;
   int port = 0;
   PyObject * isYesObj = NULL;
