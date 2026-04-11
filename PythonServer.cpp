@@ -420,6 +420,7 @@ void PythonServer::finiPyInterpreter()
     pMainModule_ = NULL;
   }
   PyErr_Clear();
+  (void)gstate;
   if (!hasInterpreter_) {
     Py_Finalize();
   }
@@ -684,6 +685,7 @@ void PythonServer::continuousProcessing()
 
 void PythonServer::processUDPInput( const unsigned char * recBuffer, int recBytes, struct sockaddr_in & cAddr )
 {
+  (void)cAddr;
   unsigned char * message = NULL;
   int messageSize = 0;
 
@@ -934,7 +936,7 @@ bool PythonServer::getObjectDir( const std::string & searchStr, std::vector<std:
       // search the current object for attr/meth/obj match to the search string
       PyObject * metdList = PyObject_Dir( searchingObj );
       if (metdList && (listSize = PyList_Size( metdList )) > 0) {
-        for (int i = 0; i < listSize; i++) {
+        for (size_t i = 0; i < listSize; i++) {
 #if PY_MAJOR_VERSION >= 3
           PyObject * unicodeobj = PyUnicode_FromObject( PyList_GetItem( metdList, i ) );
           std::string methodStr( PyUnicode_AsUTF8( unicodeobj ) );
@@ -959,7 +961,7 @@ bool PythonServer::getObjectDir( const std::string & searchStr, std::vector<std:
         if (targetStr.empty()) { // special case give full list of options
           PyObject * metdList = PyObject_Dir( searchingObj );
           if (metdList && (listSize = PyList_Size( metdList )) > 0) {
-            for (int i = 0; i < listSize; i++) {
+            for (size_t i = 0; i < listSize; i++) {
 #if PY_MAJOR_VERSION >= 3
               PyObject * unicodeobj = PyUnicode_FromObject( PyList_GetItem( metdList, i ) );
               std::string methodStr( PyUnicode_AsUTF8( unicodeobj ) );
@@ -1370,6 +1372,7 @@ void PythonSession::handleTab()
         else { // print all options in a table list
           int minlen = 500, maxlen = 0;
           int minidx = -1;
+          (void)minidx;
           for (int i = 0; i < lsize; i++) {
             int len = mylist[i].length();
             if (len > maxlen) {
@@ -1561,6 +1564,7 @@ void PythonSession::write( const char * str )
   //DEBUG_MSG(("PythonSession::Send() send over %s chars\n", str));
   if (fd_ != INVALID_SOCKET) {
     ssize_t retval = ::write( fd_, str, strlen( str ) );
+    (void)retval;
   }
 }
 
