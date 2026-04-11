@@ -1628,6 +1628,11 @@ void PyRideNetComm::clientDataSend( const int command, const int subcommand,
 //helper method to manage TCP fd list
 PyRideNetComm::ClientItem * PyRideNetComm::findClientFromClientList( struct sockaddr_in & cAddr )
 {
+#ifdef WIN32
+  EnterCriticalSection( &t_criticalSection_ );
+#else
+  pthread_mutex_lock( &t_mutex_ );
+#endif
   ClientItem * found = NULL;
   ClientItem * fdPtr = clientList_;
   while (fdPtr) {
@@ -1637,11 +1642,21 @@ PyRideNetComm::ClientItem * PyRideNetComm::findClientFromClientList( struct sock
     }
     fdPtr = fdPtr->pNext;
   }
+#ifdef WIN32
+  LeaveCriticalSection( &t_criticalSection_ );
+#else
+  pthread_mutex_unlock( &t_mutex_ );
+#endif
   return found;
 }
 
 PyRideNetComm::ClientItem * PyRideNetComm::findClientFromClientList( SOCKET_T fd )
 {
+#ifdef WIN32
+  EnterCriticalSection( &t_criticalSection_ );
+#else
+  pthread_mutex_lock( &t_mutex_ );
+#endif
   ClientItem * found = NULL;
   ClientItem * fdPtr = clientList_;
   while (fdPtr) {
@@ -1651,11 +1666,21 @@ PyRideNetComm::ClientItem * PyRideNetComm::findClientFromClientList( SOCKET_T fd
     }
     fdPtr = fdPtr->pNext;
   }
+#ifdef WIN32
+  LeaveCriticalSection( &t_criticalSection_ );
+#else
+  pthread_mutex_unlock( &t_mutex_ );
+#endif
   return found;
 }
 
 PyRideNetComm::ClientItem * PyRideNetComm::findClientFromClientList( const char cID )
 {
+#ifdef WIN32
+  EnterCriticalSection( &t_criticalSection_ );
+#else
+  pthread_mutex_lock( &t_mutex_ );
+#endif
   ClientItem * found = NULL;
   ClientItem * fdPtr = clientList_;
   while (fdPtr) {
@@ -1665,6 +1690,11 @@ PyRideNetComm::ClientItem * PyRideNetComm::findClientFromClientList( const char 
     }
     fdPtr = fdPtr->pNext;
   }
+#ifdef WIN32
+  LeaveCriticalSection( &t_criticalSection_ );
+#else
+  pthread_mutex_unlock( &t_mutex_ );
+#endif
   return found;
 }
 
@@ -1741,6 +1771,11 @@ PyRideNetComm::ClientItem * PyRideNetComm::addFdToClientList( const SOCKET_T & f
 int PyRideNetComm::calcTelemetryClients()
 {
   int clients = 0;
+#ifdef WIN32
+  EnterCriticalSection( &t_criticalSection_ );
+#else
+  pthread_mutex_lock( &t_mutex_ );
+#endif
   ClientItem * clientPtr = clientList_;
   while (clientPtr) {
     if (clientPtr->pushData) {
@@ -1748,6 +1783,11 @@ int PyRideNetComm::calcTelemetryClients()
     }
     clientPtr = clientPtr->pNext;
   }
+#ifdef WIN32
+  LeaveCriticalSection( &t_criticalSection_ );
+#else
+  pthread_mutex_unlock( &t_mutex_ );
+#endif
   return clients;
 }
 #endif

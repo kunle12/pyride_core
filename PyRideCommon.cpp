@@ -288,22 +288,29 @@ int encryptMessage( const unsigned char * origMesg, int origMesgLength, unsigned
 }
 
 #endif // USE_ENCRYPTION
-static const unsigned char hash_salt[] = "&cr1P";
-
-int secureSHA256Hash( const unsigned char * password, const int pwlen, unsigned char * code )
+int secureSHA256Hash( const unsigned char * password, const int pwlen, unsigned char * code, const unsigned char * salt )
 {
   unsigned char * buf = NULL;
   if (!(password && code && pwlen > 0)) {
     return -1;
   }
-  int buflen = SHA256_DIGEST_LENGTH + sizeof( hash_salt );
+
+  const unsigned char * usedSalt = salt;
+  unsigned char defaultSalt[] = "&cr1P";
+  int saltLen = 16;
+
+  if (!usedSalt) {
+    usedSalt = defaultSalt;
+    saltLen = sizeof( defaultSalt ) - 1;
+  }
+
+  int buflen = SHA256_DIGEST_LENGTH + saltLen;
   buf = (unsigned char*) malloc( buflen );
   memset( buf, 0, buflen );
   SHA256( (unsigned char*)password, pwlen, buf );
   for (int i = 0; i < 100; i++) {
-    memcpy( buf+SHA256_DIGEST_LENGTH, (void*)&hash_salt, sizeof(hash_salt));
+    memcpy( buf+SHA256_DIGEST_LENGTH, usedSalt, saltLen);
     SHA256( buf, buflen, buf );
-    
   }
   memcpy( code, buf, SHA256_DIGEST_LENGTH );
   free( buf );

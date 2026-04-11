@@ -320,7 +320,7 @@ void endecryptInit(void);
 void endecryptFini(void);
 int decryptMessage( const unsigned char * origMesg, int origMesgLength, unsigned char ** decryptedMesg, int * decryptedMesgLength );
 int encryptMessage( const unsigned char * origMesg, int origMesgLength, unsigned char ** encryptedMesg, int * encryptedMesgLength );
-int secureSHA256Hash( const unsigned char * password, const int pwlen, unsigned char * code );
+int secureSHA256Hash( const unsigned char * password, const int pwlen, unsigned char * code, const unsigned char * salt = nullptr );
 
 #ifdef __cplusplus
 }

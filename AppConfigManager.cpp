@@ -178,6 +178,7 @@ UserData * AppConfigManager::parseUserRecord( TiXmlNode * userNode )
 
   TiXmlElement * nameElm = userNode->FirstChildElement( "Name" );
   TiXmlElement * codeElm = userNode->FirstChildElement( "Password" );
+  TiXmlElement * saltElm = userNode->FirstChildElement( "Salt" );
   
   if (!nameElm || !codeElm) {
     ERROR_MSG( "LoadConfig: missing element "
@@ -199,6 +200,21 @@ UserData * AppConfigManager::parseUserRecord( TiXmlNode * userNode )
       record = new UserData;
       record->name = std::string( name );
       memcpy( &(record->password), hashCode, SHA256_DIGEST_LENGTH );
+
+      memset( record->salt, 0, 16 );
+      if (saltElm) {
+        const char * saltStr = saltElm->GetText();
+        if (saltStr) {
+          size_t saltOutLen = 0;
+          unsigned char * saltData = ::decodeBase64( saltStr, &saltOutLen );
+          if (saltData && saltOutLen == 16) {
+            memcpy( record->salt, saltData, 16 );
+          }
+          if (saltData)
+            free( saltData );
+        }
+      }
+
       record->clientFD = INVALID_SOCKET;
       memset( &(record->clientAddr), 0, sizeof( struct sockaddr_in ) );
       free( hashCode );
@@ -367,8 +383,13 @@ bool AppConfigManager::addUser( const char * name, const char * password )
 
   unsigned char code[SHA256_DIGEST_LENGTH];
   memset( code, 0, SHA256_DIGEST_LENGTH );
+
+  unsigned char salt[16];
+  for (int i = 0; i < 16; i++) {
+    salt[i] = static_cast<unsigned char>(rand() % 256);
+  }
   
-  secureSHA256Hash( (unsigned char*)password, strlen( password ), code );
+  secureSHA256Hash( (unsigned char*)password, strlen( password ), code, salt );
 
   UserDataList::iterator iter;
   for (iter = userDataList_.begin(); iter != userDataList_.end(); iter++) {
@@ -382,6 +403,7 @@ bool AppConfigManager::addUser( const char * name, const char * password )
   newUser->name = name;
   newUser->clientFD = INVALID_SOCKET;
   memcpy( newUser->password, code, SHA256_DIGEST_LENGTH );
+  memcpy( newUser->salt, salt, 16 );
   memset( &(newUser->clientAddr), 0, sizeof( struct sockaddr_in ) );
   userDataList_.push_back( newUser );
   return true;
@@ -419,12 +441,12 @@ bool AppConfigManager::changeUserPassword( const char * name, const char * oldpa
 
   unsigned char code[SHA256_DIGEST_LENGTH];
   memset( code, 0, SHA256_DIGEST_LENGTH );
-  secureSHA256Hash( (unsigned char*)oldpassword, strlen( oldpassword ), code );
+  secureSHA256Hash( (unsigned char*)oldpassword, strlen( oldpassword ), code, (*iter)->salt );
   if (memcmp( code, (*iter)->password, SHA256_DIGEST_LENGTH ))
     return false;
 
   memset( code, 0, SHA256_DIGEST_LENGTH );
-  secureSHA256Hash( (unsigned char*)newpassword, strlen( newpassword ), code );
+  secureSHA256Hash( (unsigned char*)newpassword, strlen( newpassword ), code, (*iter)->salt );
   memcpy( (*iter)->password, code, SHA256_DIGEST_LENGTH );
   return true;
 }
@@ -533,6 +555,14 @@ void AppConfigManager::saveConfig()
       }
       else {
         fprintf( outFile, "      <Password> </Password>\n" );
+      }
+      encodeBuf = ::encodeBase64( userDataList_[i]->salt, 16 );
+      if (encodeBuf) {
+        fprintf( outFile, "      <Salt> %s </Salt>\n", encodeBuf );
+        free( encodeBuf );
+      }
+      else {
+        fprintf( outFile, "      <Salt> </Salt>\n" );
       }
       fprintf( outFile, "    </User>\n" );
     }

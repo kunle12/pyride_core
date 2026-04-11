@@ -846,6 +846,7 @@ void PythonServer::disconnectClient( ClientItem * client, bool sendNotification 
 
 void PythonServer::broadcastServerMessage( const char * mesg )
 {
+  pthread_mutex_lock( &t_mutex_ );
   ClientItem * fdPtr = clientList_;
   while (fdPtr) {
     if (fdPtr->pSession) {
@@ -854,6 +855,7 @@ void PythonServer::broadcastServerMessage( const char * mesg )
     }
     fdPtr = fdPtr->pNext;
   }
+  pthread_mutex_unlock( &t_mutex_ );
 }
 
 bool PythonServer::messageValidation( const unsigned char * receivedMesg, const int receivedBytes, char & cID,

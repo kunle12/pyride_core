@@ -37,6 +37,7 @@ namespace pyride {
 typedef struct {
   std::string name;
   unsigned char password[SHA256_DIGEST_LENGTH];
+  unsigned char salt[16];
   SOCKET_T clientFD;
   struct sockaddr_in clientAddr;
 } UserData;
