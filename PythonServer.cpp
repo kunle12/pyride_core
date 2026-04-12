@@ -232,7 +232,7 @@ bool PythonServer::initPyInterpreter()
   }
   else {
 #if PY_MAJOR_VERSION >= 3
-  #if PY_MINOR_VERSION >= 13
+  #if PY_MINOR_VERSION > 13
     if (strlen(customPythonHome)) {
       wchar_t * homeStr = Py_DecodeLocale( customPythonHome, NULL );
       PyInitConfig * config = PyInitConfig_Create();
