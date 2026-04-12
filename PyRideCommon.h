@@ -99,19 +99,32 @@ const char * logFileName = LOGNAME
 extern FILE * s_pyridelog;
 #define PYRIDE_LOGGING_INIT \
 { \
-  char * sep = NULL; \
-  if ((sep = strrchr( (char*)logFileName, '/' )) != NULL ) { \
-    struct stat sb; \
-    int dirlen = sep - logFileName; \
-    char * dirname = (char *) malloc( dirlen + 1 ); \
-    memcpy( dirname, logFileName, dirlen ); \
-    dirname[dirlen] = '\0'; \
-    if (stat( dirname, &sb ) == -1) \
-      mkdir( dirname, 0755 ); \
-    free( dirname ); \
+  const char * logDir = NULL; \
+  char * ros_log_dir = getenv("ROS_LOG_DIR"); \
+  if (ros_log_dir) { \
+    logDir = ros_log_dir; \
+  } else { \
+    char * home_dir = getenv("HOME"); \
+    static char default_log_dir[1024]; \
+    if (home_dir) { \
+      snprintf(default_log_dir, sizeof(default_log_dir), "%s/.ros/log", home_dir); \
+      default_log_dir[sizeof(default_log_dir) - 1] = '\0'; \
+      logDir = default_log_dir; \
+    } \
   } \
-} \
-s_pyridelog = fopen( logFileName, "a" )
+  if (logDir) { \
+    struct stat sb; \
+    if (stat( logDir, &sb ) == -1) \
+      mkdir( logDir, 0755 ); \
+    static char full_log_path[1024]; \
+    size_t len = snprintf(full_log_path, sizeof(full_log_path), "%s/%s", logDir, logFileName); \
+    if (len < sizeof(full_log_path)) { \
+      s_pyridelog = fopen( full_log_path, "a" ); \
+    } \
+  } else { \
+    s_pyridelog = fopen( logFileName, "a" ); \
+  } \
+}
 
 //#define s_pyridelog stdout
 
