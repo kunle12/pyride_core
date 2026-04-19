@@ -24,73 +24,70 @@
 
 namespace pyride {
 
-class PyOutputWriter
-{
+class PyOutputWriter {
 public:
-  virtual void write( const char * msg ) = 0;
-  virtual void broadcastMessage( const char * data ) = 0;
-  virtual PyObject * mainScript() = 0;
+  virtual void write(const char *msg) = 0;
+  virtual void broadcastMessage(const char *data) = 0;
+  virtual PyObject *mainScript() = 0;
   virtual ~PyOutputWriter() {}
 };
 
 class PyModuleExtendedCommandHandler;
 
-class PyModuleExtension
-{
+class PyModuleExtension {
 public:
-  PyModuleExtension( const char * name );
+  PyModuleExtension(const char *name);
   virtual ~PyModuleExtension();
-  
-  std::string & name() { return name_; }
 
-  PyObject * init( PyOutputWriter * pow );
-  bool invokeCallback( const char * fnName, PyObject * arg );
-  bool invokeCallback( const char * fnName, PyObject * arg, PyObject * & result );
-  void write( const char * str );
-  
-  void sendTeamMessage( const char * mesg );
-  void setTeamColour( TeamColour teamColour );
+  std::string &name() { return name_; }
+
+  PyObject *init(PyOutputWriter *pow);
+  bool invokeCallback(const char *fnName, PyObject *arg);
+  bool invokeCallback(const char *fnName, PyObject *arg, PyObject *&result);
+  void write(const char *str);
+
+  void sendTeamMessage(const char *mesg);
+  void setTeamColour(TeamColour teamColour);
 
   void fini();
   char clientID() const { return clientID_; }
-  void clientID( char cID );
+  void clientID(char cID);
 
 protected:
   char clientID_;
   std::string name_;
-  
-  PyOutputWriter * pow_;
-  PyObject * pPyModule_;
-  PyModuleExtendedCommandHandler * pyModuleCommandHandler_;
-  
-  virtual PyObject * createPyModule() = 0;
-  void swapCallbackHandler( PyObject * & master, PyObject * newObj );
-  void invokeCallbackHandler( PyObject * & cbObj, PyObject * arg );
+
+  PyOutputWriter *pow_;
+  PyObject *pPyModule_;
+  PyModuleExtendedCommandHandler *pyModuleCommandHandler_;
+
+  virtual PyObject *createPyModule() = 0;
+  void swapCallbackHandler(PyObject *&master, PyObject *newObj);
+  void invokeCallbackHandler(PyObject *&cbObj, PyObject *arg);
 };
-  
-class PyModuleExtendedCommandHandler : public PyRideExtendedCommandHandler
-{
+
+class PyModuleExtendedCommandHandler : public PyRideExtendedCommandHandler {
 public:
-  PyModuleExtendedCommandHandler( PyModuleExtension * pyExtModule = NULL );
-  
+  PyModuleExtendedCommandHandler(PyModuleExtension *pyExtModule = NULL);
+
 private:
-  bool executeRemoteCommand( PyRideExtendedCommand command, int & retVal,
-                            const unsigned char * optionalData = NULL,
-                            const int optionalDataLength = 0 );
+  bool executeRemoteCommand(PyRideExtendedCommand command, int &retVal,
+                            const unsigned char *optionalData = NULL,
+                            const int optionalDataLength = 0);
   void cancelCurrentOperation();
-  
-  bool onUserLogOn( const std::string & name );
-  void onUserLogOff( const std::string & name );
 
-  int onExclusiveCtrlRequest( const std::string & name );
-  void onExclusiveCtrlRelease( const std::string & name );
+  bool onUserLogOn(const std::string &name);
+  void onUserLogOff(const std::string &name);
 
-  void onTimer( const long timerID );
-  void onTimerLapsed( const long timerID );
-  
-  void onSnapshotImage( const string & name );
+  int onExclusiveCtrlRequest(const std::string &name);
+  void onExclusiveCtrlRelease(const std::string &name);
 
-  PyModuleExtension * pyExtModule_;
+  void onTimer(const long timerID);
+  void onTimerLapsed(const long timerID);
+
+  void onSnapshotImage(const string &name);
+
+  PyModuleExtension *pyExtModule_;
 };
 
 extern std::vector<long> g_PyModuleTimerList;

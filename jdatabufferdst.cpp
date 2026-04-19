@@ -15,8 +15,7 @@
  * before any data is actually written.
  */
 
-void init_destination( j_compress_ptr cinfo )
-{
+void init_destination(j_compress_ptr cinfo) {
   buffer_dest_ptr dest = (buffer_dest_ptr)cinfo->dest;
 
   dest->pub.next_output_byte = dest->buffer;
@@ -46,18 +45,18 @@ void init_destination( j_compress_ptr cinfo )
  * write it out when emptying the buffer externally.
  */
 
-boolean empty_output_buffer( j_compress_ptr cinfo )
-{  
-  buffer_dest_ptr dest = (buffer_dest_ptr) cinfo->dest;
-  
+boolean empty_output_buffer(j_compress_ptr cinfo) {
+  buffer_dest_ptr dest = (buffer_dest_ptr)cinfo->dest;
+
   int old_buffer_size = dest->total_buffer_size;
   int new_buffer_size = old_buffer_size + DEFAULT_IMAGE_SIZE / 10;
-  
+
   if (new_buffer_size > MAX_JPEG_BUFFER_SIZE) {
     return FALSE;
   }
-  
-  JOCTET * new_buffer = (JOCTET *)realloc( dest->buffer, new_buffer_size * sizeof( JOCTET ) );
+
+  JOCTET *new_buffer =
+      (JOCTET *)realloc(dest->buffer, new_buffer_size * sizeof(JOCTET));
   if (new_buffer == NULL) {
     return FALSE;
   }
@@ -79,10 +78,7 @@ boolean empty_output_buffer( j_compress_ptr cinfo )
  * for error exit.
  */
 
-void term_destination( j_compress_ptr cinfo )
-{
-  (void)cinfo;
-}
+void term_destination(j_compress_ptr cinfo) { (void)cinfo; }
 
 /*
  * Prepare for output to a stdio stream.
@@ -90,8 +86,7 @@ void term_destination( j_compress_ptr cinfo )
  * for closing it after finishing compression.
  */
 
-void jpeg_databuffer_dest( j_compress_ptr cinfo )
-{
+void jpeg_databuffer_dest(j_compress_ptr cinfo) {
   buffer_dest_ptr dest;
 
   /* The destination object is made permanent so that multiple JPEG images
@@ -100,34 +95,31 @@ void jpeg_databuffer_dest( j_compress_ptr cinfo )
    * manager serially with the same JPEG object, because their private object
    * sizes may be different.  Caveat programmer.
    */
-  if (cinfo->dest == NULL) {	/* first time for this JPEG object? */
-    cinfo->dest = (struct jpeg_destination_mgr *)
-      (*cinfo->mem->alloc_small) ((j_common_ptr) cinfo, JPOOL_PERMANENT,
-				  sizeof( buffer_destination_mgr ) );
+  if (cinfo->dest == NULL) { /* first time for this JPEG object? */
+    cinfo->dest = (struct jpeg_destination_mgr *)(*cinfo->mem->alloc_small)(
+        (j_common_ptr)cinfo, JPOOL_PERMANENT, sizeof(buffer_destination_mgr));
   }
 
-  dest = (buffer_dest_ptr) cinfo->dest;
+  dest = (buffer_dest_ptr)cinfo->dest;
   dest->pub.init_destination = init_destination;
   dest->pub.empty_output_buffer = empty_output_buffer;
   dest->pub.term_destination = term_destination;
   /* Allocate the output buffer --- it will be released when done with image */
-  dest->buffer = (JOCTET *)malloc( DEFAULT_IMAGE_SIZE * sizeof( JOCTET ) );
+  dest->buffer = (JOCTET *)malloc(DEFAULT_IMAGE_SIZE * sizeof(JOCTET));
   dest->total_buffer_size = DEFAULT_IMAGE_SIZE;
 }
 
-unsigned char * get_jpeg_data_and_size( j_compress_ptr cinfo, int * data_size )
-{
-  buffer_dest_ptr dest = (buffer_dest_ptr) cinfo->dest;
+unsigned char *get_jpeg_data_and_size(j_compress_ptr cinfo, int *data_size) {
+  buffer_dest_ptr dest = (buffer_dest_ptr)cinfo->dest;
 
   *data_size = dest->pub.next_output_byte - dest->buffer;
   return (unsigned char *)dest->buffer;
 }
 
-void jpeg_databuffer_free( j_compress_ptr cinfo )
-{
-  buffer_dest_ptr dest = (buffer_dest_ptr) cinfo->dest;
+void jpeg_databuffer_free(j_compress_ptr cinfo) {
+  buffer_dest_ptr dest = (buffer_dest_ptr)cinfo->dest;
   if (dest->buffer) {
-    free( dest->buffer );
+    free(dest->buffer);
     dest->buffer = NULL;
   }
   dest->total_buffer_size = 0;
@@ -135,10 +127,8 @@ void jpeg_databuffer_free( j_compress_ptr cinfo )
   dest->pub.next_output_byte = NULL;
 }
 
-void reset_jpeg_data_buffer( j_compress_ptr cinfo )
-{
-  buffer_dest_ptr dest = (buffer_dest_ptr) cinfo->dest;
+void reset_jpeg_data_buffer(j_compress_ptr cinfo) {
+  buffer_dest_ptr dest = (buffer_dest_ptr)cinfo->dest;
   dest->pub.free_in_buffer = dest->total_buffer_size;
   dest->pub.next_output_byte = dest->buffer;
 }
-

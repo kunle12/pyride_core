@@ -11,8 +11,8 @@
 #define RTP_DATA_RECEIVER_H
 
 #ifdef WIN32
-#include <winbase.h>
 #include <process.h>
+#include <winbase.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else
@@ -22,9 +22,9 @@
 
 #ifdef WIN32
 #include <winsock2.h>
-#define SOCKET_T  SOCKET
+#define SOCKET_T SOCKET
 #else
-#define SOCKET_T  int
+#define SOCKET_T int
 #define INVALID_SOCKET -1
 #endif
 
@@ -32,29 +32,29 @@ namespace pyride_remote {
 class RTPDataReceiver {
 public:
   RTPDataReceiver();
-  void init( int port, bool isVideoStream );
+  void init(int port, bool isVideoStream);
   void fini();
 
-  int grabData( unsigned char ** dataBuffer, bool & dataSizeChanged );
+  int grabData(unsigned char **dataBuffer, bool &dataSizeChanged);
 
-  void setStreamSource( const char * host, short controlPort, short dataPort );
+  void setStreamSource(const char *host, short controlPort, short dataPort);
 
   void firewallPunching();
 
 private:
-  void * streamSession_;
+  void *streamSession_;
 
   SOCKET_T controlSocket_;
   SOCKET_T dataSocket_;
 
-  struct sockaddr_in  cSourceAddr_;
-  struct sockaddr_in  dSourceAddr_;
+  struct sockaddr_in cSourceAddr_;
+  struct sockaddr_in dSourceAddr_;
 
   unsigned int receiveTimestamp_;
   unsigned int lastSeqNum_;
-  unsigned char * dataBuffer_;
+  unsigned char *dataBuffer_;
   int dataBufferSize_;
   int existDataSize_;
 };
-}
+} // namespace pyride_remote
 #endif // RTP_DATA_RECEIVER_H

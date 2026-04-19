@@ -7,155 +7,123 @@
  *
  */
 #ifdef WIN32
+#include <ObjBase.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <ObjBase.h>
 #endif
 
 #include "ConsoleDataProcessor.h"
 
-void initConsoleDataProcessor()
-{
-  ConsoleDataProcessor::instance()->init();
+void initConsoleDataProcessor() { ConsoleDataProcessor::instance()->init(); }
+
+void finiConsoleDataProcessor() { ConsoleDataProcessor::instance()->fini(); }
+
+void processingData() { ConsoleDataProcessor::instance()->processingData(); }
+
+void setRobotCallbacks(
+    void (*addRobotFn)(const char, const int, const RobotInfo *,
+                       const VideoSettings *, const AudioSettings *,
+                       const unsigned char *, const int),
+    void (*removeRobotFn)(const char),
+    void (*telemetryFn)(const char, const RobotPose *, const FieldObject *,
+                        const int),
+    void (*isTelemetryStreamStartedFn)(bool),
+    void (*isImageStreamStartedFn)(bool, const char),
+    void (*onCameraModeUpdateFn)(const char, ImageFormat),
+    void (*onCameraSwitchFn)(const char, const VideoSettings *),
+    void (*operationalDataFn)(const char, const int, const unsigned char *,
+                              const int),
+    void (*extCommandRespFn)(const char, const PyRideExtendedCommand,
+                             const unsigned char *, const int)) {
+  ConsoleDataProcessor::instance()->setRobotDataCallbacks(
+      addRobotFn, removeRobotFn, telemetryFn, isTelemetryStreamStartedFn,
+      isImageStreamStartedFn, onCameraModeUpdateFn, onCameraSwitchFn,
+      operationalDataFn, extCommandRespFn);
 }
 
-void finiConsoleDataProcessor()
-{
-  ConsoleDataProcessor::instance()->fini();
+void discoverRobots() { ConsoleDataProcessor::instance()->discoverRobots(); }
+
+bool logonToRobot(const char *host, const unsigned char *authCode) {
+  return ConsoleDataProcessor::instance()->logonToRobot(host, authCode);
 }
 
-void processingData()
-{
-  ConsoleDataProcessor::instance()->processingData();
-}
-
-void setRobotCallbacks( void (* addRobotFn)( const char, const int, const RobotInfo *, const VideoSettings *, const AudioSettings *,
-                                        const unsigned char *, const int ),
-                     void (* removeRobotFn)( const char ),
-                     void (* telemetryFn)( const char, const RobotPose *, const FieldObject *, const int ),
-                     void (* isTelemetryStreamStartedFn)( bool ),
-                     void (* isImageStreamStartedFn)( bool, const char ),
-                     void (* onCameraModeUpdateFn)( const char, ImageFormat ),
-                     void (* onCameraSwitchFn)( const char, const VideoSettings * ),
-                     void (* operationalDataFn)( const char, const int, const unsigned char *, const int ),
-                     void (* extCommandRespFn)( const char, const PyRideExtendedCommand,
-                                                const unsigned char *, const int ) )
-{
-  ConsoleDataProcessor::instance()->setRobotDataCallbacks( addRobotFn, removeRobotFn, telemetryFn,
-                                                        isTelemetryStreamStartedFn, 
-                                                        isImageStreamStartedFn,
-                                                        onCameraModeUpdateFn,
-                                                        onCameraSwitchFn,
-                                                        operationalDataFn,
-                                                        extCommandRespFn);
-}
-
-void discoverRobots()
-{
-  ConsoleDataProcessor::instance()->discoverRobots();
-}
-
-bool logonToRobot( const char * host, const unsigned char * authCode )
-{
-  return ConsoleDataProcessor::instance()->logonToRobot( host, authCode );
-}
-
-void disconnectRobots()
-{
+void disconnectRobots() {
   ConsoleDataProcessor::instance()->disconnectRobots();
 }
 
-void startTelemetryStream( const char cID )
-{
-  ConsoleDataProcessor::instance()->startTelemetryStream( cID );
+void startTelemetryStream(const char cID) {
+  ConsoleDataProcessor::instance()->startTelemetryStream(cID);
 }
 
-void stopTelemetryStream()
-{
+void stopTelemetryStream() {
   ConsoleDataProcessor::instance()->stopTelemetryStream();
 }
 
-void startCameraImageStream( const char cID )
-{
-  ConsoleDataProcessor::instance()->startCameraImageStream( cID );
+void startCameraImageStream(const char cID) {
+  ConsoleDataProcessor::instance()->startCameraImageStream(cID);
 }
 
-void stopCameraImageStream( const char cID )
-{
-  ConsoleDataProcessor::instance()->stopCameraImageStream( cID );
+void stopCameraImageStream(const char cID) {
+  ConsoleDataProcessor::instance()->stopCameraImageStream(cID);
 }
 
-void cancelCurrentOperation( const char cID )
-{
-  ConsoleDataProcessor::instance()->cancelCurrentOperation( cID );
+void cancelCurrentOperation(const char cID) {
+  ConsoleDataProcessor::instance()->cancelCurrentOperation(cID);
 }
 
-void setImageFormat( const char cID, ImageFormat format )
-{
-  ConsoleDataProcessor::instance()->setImageFormat( cID, format );
+void setImageFormat(const char cID, ImageFormat format) {
+  ConsoleDataProcessor::instance()->setImageFormat(cID, format);
 }
 
-void switchCamera( const char cID, const char vID )
-{
-  ConsoleDataProcessor::instance()->switchCamera( cID, vID );
+void switchCamera(const char cID, const char vID) {
+  ConsoleDataProcessor::instance()->switchCamera(cID, vID);
 }
 
-void issueHeartBeat( const char cID )
-{
-  ConsoleDataProcessor::instance()->issueHeartBeat( cID );
+void issueHeartBeat(const char cID) {
+  ConsoleDataProcessor::instance()->issueHeartBeat(cID);
 }
 
-void issueExtendedCommand( const char cID, const PyRideExtendedCommand command,
-                          const unsigned char * optionalData , const int optionalDataLength )
-{
-  ConsoleDataProcessor::instance()->issueExtendedCommand( cID, command, optionalData, optionalDataLength );
+void issueExtendedCommand(const char cID, const PyRideExtendedCommand command,
+                          const unsigned char *optionalData,
+                          const int optionalDataLength) {
+  ConsoleDataProcessor::instance()->issueExtendedCommand(
+      cID, command, optionalData, optionalDataLength);
 }
 
-bool findClientAddress( const char cID, struct sockaddr_in * cAddr )
-{
-  return ConsoleDataProcessor::instance()->findClientAddress( cID, *cAddr );
+bool findClientAddress(const char cID, struct sockaddr_in *cAddr) {
+  return ConsoleDataProcessor::instance()->findClientAddress(cID, *cAddr);
 }
 
-ConsoleDataProcessor * ConsoleDataProcessor::s_pConsoleDataProcessor = NULL;
+ConsoleDataProcessor *ConsoleDataProcessor::s_pConsoleDataProcessor = NULL;
 
-ConsoleDataProcessor * ConsoleDataProcessor::instance()
-{
+ConsoleDataProcessor *ConsoleDataProcessor::instance() {
   if (!s_pConsoleDataProcessor)
     s_pConsoleDataProcessor = new ConsoleDataProcessor();
   return s_pConsoleDataProcessor;
 }
 
-ConsoleDataProcessor::ConsoleDataProcessor() :
-  RobotDataHandler(),
-  pNetComm_( NULL ),
-  cmdHandler_( NULL ),
-  telemetryRobot_( 0 ),
-  addRobotFn_( NULL ),
-  removeRobotFn_( NULL ),
-  telemetryFn_( NULL ),
-  isTelemetryStreamStartedFn_( NULL ),
-  isImageStreamStartedFn_( NULL ),
-  onCameraModeUpdateFn_( NULL ),
-  onCameraSwitchFn_( NULL ),
-  operationalDataFn_( NULL ),
-  extCommandRespFn_( NULL )
-{
+ConsoleDataProcessor::ConsoleDataProcessor()
+    : RobotDataHandler(), pNetComm_(NULL), cmdHandler_(NULL),
+      telemetryRobot_(0), addRobotFn_(NULL), removeRobotFn_(NULL),
+      telemetryFn_(NULL), isTelemetryStreamStartedFn_(NULL),
+      isImageStreamStartedFn_(NULL), onCameraModeUpdateFn_(NULL),
+      onCameraSwitchFn_(NULL), operationalDataFn_(NULL),
+      extCommandRespFn_(NULL) {
 #ifdef WIN32
 #ifndef NO_WINCOM
-  CoInitializeEx( NULL, COINIT_APARTMENTTHREADED );
+  CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
 #endif
   WSAData wsaData;
   int nStart = 0;
-  
-  if ((nStart = WSAStartup( 0x202, &wsaData )) != 0) {
-    DEBUG_MSG( "WebcamManager: winsock 2 DLL initialization failed\n" );
-    WSASetLastError( nStart );
+
+  if ((nStart = WSAStartup(0x202, &wsaData)) != 0) {
+    DEBUG_MSG("WebcamManager: winsock 2 DLL initialization failed\n");
+    WSASetLastError(nStart);
   }
 #endif
 }
 
-ConsoleDataProcessor::~ConsoleDataProcessor()
-{
+ConsoleDataProcessor::~ConsoleDataProcessor() {
 #ifdef WIN32
   WSACleanup();
 #ifndef NO_WINCOM
@@ -164,43 +132,44 @@ ConsoleDataProcessor::~ConsoleDataProcessor()
 #endif
 }
 
-void ConsoleDataProcessor::init( PyRideConsoleCommandHandler * cmdHander )
-{
+void ConsoleDataProcessor::init(PyRideConsoleCommandHandler *cmdHander) {
   if (!pNetComm_) {
-    pNetComm_ = new PyRideNetComm( this );
+    pNetComm_ = new PyRideNetComm(this);
     pNetComm_->init();
     int myID = 0;
-    if (pNetComm_->getIDFromIP( myID ))
+    if (pNetComm_->getIDFromIP(myID))
       clientID_ = myID;
   }
   cmdHandler_ = cmdHander;
 }
 
-void ConsoleDataProcessor::fini()
-{
+void ConsoleDataProcessor::fini() {
   if (pNetComm_) {
     pNetComm_->fini();
   }
 }
 
-void ConsoleDataProcessor::processingData()
-{
+void ConsoleDataProcessor::processingData() {
   if (pNetComm_) {
     pNetComm_->continuousProcessing();
   }
 }
 
-void ConsoleDataProcessor::setRobotDataCallbacks( void (* addRobotFn)( const char, const int, const RobotInfo *, const VideoSettings *, const AudioSettings *, const unsigned char *, const int ),
-                                                void (* removeRobotFn)( const char ),
-                                                void (* telemetryFn)( const char, const RobotPose *, const FieldObject *, const int ),
-                                                void (* isTelemetryStreamStartedFn)( bool ),
-                                                void (* isImageStreamStartedFn)( bool, const char ),
-                                                void (* onCameraModeUpdateFn)( const char, ImageFormat ),
-                                                void (* onCameraSwitchFn)( const char, const VideoSettings * ),
-                                                void (* operationalDataFn)( const char, const int, const unsigned char *, const int ),
-                                                void (* extCommandRespFn)( const char, const PyRideExtendedCommand,
-                                                                         const unsigned char *, const int ) )
-{
+void ConsoleDataProcessor::setRobotDataCallbacks(
+    void (*addRobotFn)(const char, const int, const RobotInfo *,
+                       const VideoSettings *, const AudioSettings *,
+                       const unsigned char *, const int),
+    void (*removeRobotFn)(const char),
+    void (*telemetryFn)(const char, const RobotPose *, const FieldObject *,
+                        const int),
+    void (*isTelemetryStreamStartedFn)(bool),
+    void (*isImageStreamStartedFn)(bool, const char),
+    void (*onCameraModeUpdateFn)(const char, ImageFormat),
+    void (*onCameraSwitchFn)(const char, const VideoSettings *),
+    void (*operationalDataFn)(const char, const int, const unsigned char *,
+                              const int),
+    void (*extCommandRespFn)(const char, const PyRideExtendedCommand,
+                             const unsigned char *, const int)) {
   addRobotFn_ = addRobotFn;
   removeRobotFn_ = removeRobotFn;
   telemetryFn_ = telemetryFn;
@@ -212,281 +181,266 @@ void ConsoleDataProcessor::setRobotDataCallbacks( void (* addRobotFn)( const cha
   extCommandRespFn_ = extCommandRespFn;
 }
 
-void ConsoleDataProcessor::onRobotCreated( const char cID, const int ipAddr, const RobotInfo * rinfo,
-                                        const VideoSettings * vsettings, const AudioSettings * asettings,
-                                        const unsigned char * optLabel, const int optLabelLength )
-{
+void ConsoleDataProcessor::onRobotCreated(const char cID, const int ipAddr,
+                                          const RobotInfo *rinfo,
+                                          const VideoSettings *vsettings,
+                                          const AudioSettings *asettings,
+                                          const unsigned char *optLabel,
+                                          const int optLabelLength) {
   if (addRobotFn_) {
-    (addRobotFn_)( cID, ipAddr, rinfo, vsettings, asettings, optLabel, optLabelLength );
+    (addRobotFn_)(cID, ipAddr, rinfo, vsettings, asettings, optLabel,
+                  optLabelLength);
   }
   if (cmdHandler_) {
-    cmdHandler_->onRobotCreated( cID, ipAddr, rinfo, vsettings, asettings, optLabel, optLabelLength );
+    cmdHandler_->onRobotCreated(cID, ipAddr, rinfo, vsettings, asettings,
+                                optLabel, optLabelLength);
   }
 }
 
-void ConsoleDataProcessor::onRobotDestroyed( const char cID )
-{
+void ConsoleDataProcessor::onRobotDestroyed(const char cID) {
   if (removeRobotFn_) {
-    (removeRobotFn_)( cID );
+    (removeRobotFn_)(cID);
   }
   if (cmdHandler_) {
-    cmdHandler_->onRobotDestroyed( cID );
+    cmdHandler_->onRobotDestroyed(cID);
   }
   if (telemetryRobot_ > 0) {
     telemetryRobot_--;
   }
 }
 
-void ConsoleDataProcessor::onRobotTelemetryData( const char cID, const RobotPose * pose, const FieldObject * objects,
-                                            const int nofObjs )
-{
+void ConsoleDataProcessor::onRobotTelemetryData(const char cID,
+                                                const RobotPose *pose,
+                                                const FieldObject *objects,
+                                                const int nofObjs) {
   if (telemetryFn_) {
-    (telemetryFn_)( cID, pose, objects, nofObjs );
+    (telemetryFn_)(cID, pose, objects, nofObjs);
   }
   if (cmdHandler_) {
-    cmdHandler_->onTelemetryData( cID, pose, objects, nofObjs );
+    cmdHandler_->onTelemetryData(cID, pose, objects, nofObjs);
   }
 }
 
-void ConsoleDataProcessor::onTelemetryStreamStart( const char cID )
-{
+void ConsoleDataProcessor::onTelemetryStreamStart(const char cID) {
   if (telemetryRobot_ == 0) {
     if (isTelemetryStreamStartedFn_) {
-      (isTelemetryStreamStartedFn_)( true );
+      (isTelemetryStreamStartedFn_)(true);
     }
     if (cmdHandler_) {
-      cmdHandler_->onTelemetryStreamControl( true );
+      cmdHandler_->onTelemetryStreamControl(true);
     }
   }
   telemetryRobot_++;
 }
 
-void ConsoleDataProcessor::onTelemetryStreamStop( const char cID )
-{
+void ConsoleDataProcessor::onTelemetryStreamStop(const char cID) {
   telemetryRobot_--;
   if (telemetryRobot_ == 0) {
     if (isTelemetryStreamStartedFn_) {
-      (isTelemetryStreamStartedFn_)( false );
+      (isTelemetryStreamStartedFn_)(false);
     }
     if (cmdHandler_) {
-      cmdHandler_->onTelemetryStreamControl( false );
+      cmdHandler_->onTelemetryStreamControl(false);
     }
   }
 }
 
-void ConsoleDataProcessor::onImageStreamStart( const char cID )
-{
+void ConsoleDataProcessor::onImageStreamStart(const char cID) {
   if (isImageStreamStartedFn_) {
-    (isImageStreamStartedFn_)( true, cID );
+    (isImageStreamStartedFn_)(true, cID);
   }
   if (cmdHandler_) {
-    cmdHandler_->onVideoStreamControl( true, cID );
+    cmdHandler_->onVideoStreamControl(true, cID);
   }
 }
 
-void ConsoleDataProcessor::onImageStreamStop( const char cID )
-{
+void ConsoleDataProcessor::onImageStreamStop(const char cID) {
   if (isImageStreamStartedFn_) {
-    (isImageStreamStartedFn_)( false, cID );
+    (isImageStreamStartedFn_)(false, cID);
   }
   if (cmdHandler_) {
-    cmdHandler_->onVideoStreamControl( false, cID );
+    cmdHandler_->onVideoStreamControl(false, cID);
   }
 }
 
-void ConsoleDataProcessor::onImageFormatChange( const char cID, ImageFormat format )
-{
+void ConsoleDataProcessor::onImageFormatChange(const char cID,
+                                               ImageFormat format) {
   if (onCameraModeUpdateFn_) {
-    (onCameraModeUpdateFn_)( cID, format );
+    (onCameraModeUpdateFn_)(cID, format);
   }
 }
 
-void ConsoleDataProcessor::onVideoSwitchChange( const char cID, const VideoSettings * vsettings )
-{
+void ConsoleDataProcessor::onVideoSwitchChange(const char cID,
+                                               const VideoSettings *vsettings) {
   if (onCameraSwitchFn_) {
-    (onCameraSwitchFn_)( cID, vsettings );
+    (onCameraSwitchFn_)(cID, vsettings);
   }
   if (cmdHandler_) {
-    cmdHandler_->onVideoStreamSwitch( cID, vsettings );
+    cmdHandler_->onVideoStreamSwitch(cID, vsettings);
   }
 }
 
-void ConsoleDataProcessor::onOperationalData( const char cID, const int status, const unsigned char * optionalData,
-                                             const int optionalDataLength )
-{
+void ConsoleDataProcessor::onOperationalData(const char cID, const int status,
+                                             const unsigned char *optionalData,
+                                             const int optionalDataLength) {
   if (operationalDataFn_) {
-    (operationalDataFn_)( cID, status, optionalData, optionalDataLength );
+    (operationalDataFn_)(cID, status, optionalData, optionalDataLength);
   }
   if (cmdHandler_) {
-    cmdHandler_->onOperationalData( cID, status, optionalData, optionalDataLength );
+    cmdHandler_->onOperationalData(cID, status, optionalData,
+                                   optionalDataLength);
   }
 }
 
-void ConsoleDataProcessor::onTimer( const long timerID )
-{
+void ConsoleDataProcessor::onTimer(const long timerID) {
   if (cmdHandler_) {
-    cmdHandler_->onTimer( timerID );
+    cmdHandler_->onTimer(timerID);
   }
 }
 
-void ConsoleDataProcessor::onTimerLapsed( const long timerID )
-{
+void ConsoleDataProcessor::onTimerLapsed(const long timerID) {
   if (cmdHandler_) {
-    cmdHandler_->onTimerLapsed( timerID );
+    cmdHandler_->onTimerLapsed(timerID);
   }
 }
 
-void ConsoleDataProcessor::onExtendedCommandResponse( const char cID, const PyRideExtendedCommand command,
-                                                     const unsigned char * optionalData,
-                                                     const int optionalDataLength )
-{
+void ConsoleDataProcessor::onExtendedCommandResponse(
+    const char cID, const PyRideExtendedCommand command,
+    const unsigned char *optionalData, const int optionalDataLength) {
   if (extCommandRespFn_) {
-    (extCommandRespFn_)( cID, command, optionalData, optionalDataLength );
+    (extCommandRespFn_)(cID, command, optionalData, optionalDataLength);
   }
   if (cmdHandler_) {
-    cmdHandler_->onExtendedCommandResponse( cID, command, optionalData, optionalDataLength );
+    cmdHandler_->onExtendedCommandResponse(cID, command, optionalData,
+                                           optionalDataLength);
   }
 }
 
-void ConsoleDataProcessor::discoverRobots()
-{
+void ConsoleDataProcessor::discoverRobots() {
   if (pNetComm_) {
     pNetComm_->discoverRobots();
   }
 }
 
-bool ConsoleDataProcessor::logonToRobot( const char * host, const unsigned char * authCode )
-{
+bool ConsoleDataProcessor::logonToRobot(const char *host,
+                                        const unsigned char *authCode) {
   if (pNetComm_) {
-    return pNetComm_->logonToRobot( host, authCode );
+    return pNetComm_->logonToRobot(host, authCode);
   }
   return false;
 }
 
-void ConsoleDataProcessor::disconnectRobots()
-{
+void ConsoleDataProcessor::disconnectRobots() {
   if (pNetComm_) {
     pNetComm_->disconnectRobots();
   }
   telemetryRobot_ = 0;
 }
 
-void ConsoleDataProcessor::startTelemetryStream( const char cID )
-{
+void ConsoleDataProcessor::startTelemetryStream(const char cID) {
   if (pNetComm_) {
-    pNetComm_->startTelemetryStream( cID );
+    pNetComm_->startTelemetryStream(cID);
   }
 }
 
-void ConsoleDataProcessor::stopTelemetryStream()
-{
+void ConsoleDataProcessor::stopTelemetryStream() {
   if (pNetComm_) {
     pNetComm_->stopTelemetryStream();
   }
 }
-void ConsoleDataProcessor::startCameraImageStream( const char cID )
-{
+void ConsoleDataProcessor::startCameraImageStream(const char cID) {
   if (pNetComm_) {
-    pNetComm_->startCameraImageStream( cID );
+    pNetComm_->startCameraImageStream(cID);
   }
 }
 
-void ConsoleDataProcessor::stopCameraImageStream( const char cID )
-{
+void ConsoleDataProcessor::stopCameraImageStream(const char cID) {
   if (pNetComm_) {
-    pNetComm_->stopCameraImageStream( cID );
+    pNetComm_->stopCameraImageStream(cID);
   }
 }
 
-void ConsoleDataProcessor::cancelCurrentOperation( const char cID )
-{
+void ConsoleDataProcessor::cancelCurrentOperation(const char cID) {
   if (pNetComm_) {
-    pNetComm_->cancelCurrentOperation( cID );
+    pNetComm_->cancelCurrentOperation(cID);
   }
 }
 
-long ConsoleDataProcessor::addTimer( float initialTime, long repeats, float interval )
-{
+long ConsoleDataProcessor::addTimer(float initialTime, long repeats,
+                                    float interval) {
   if (pNetComm_) {
     if (repeats < 0) {
-      return pNetComm_->addTimer( initialTime, -1, interval );
+      return pNetComm_->addTimer(initialTime, -1, interval);
     }
-    return pNetComm_->addTimer( initialTime, repeats, interval );
+    return pNetComm_->addTimer(initialTime, repeats, interval);
   }
   return -1;
 }
 
-void ConsoleDataProcessor::delTimer( long tID )
-{
+void ConsoleDataProcessor::delTimer(long tID) {
   if (pNetComm_) {
-    pNetComm_->delTimer( tID );
+    pNetComm_->delTimer(tID);
   }
 }
 
-bool ConsoleDataProcessor::isTimerRunning( long tID )
-{
+bool ConsoleDataProcessor::isTimerRunning(long tID) {
   if (pNetComm_) {
-    return pNetComm_->isTimerRunning( tID );
+    return pNetComm_->isTimerRunning(tID);
   }
   return false;
 }
 
-bool ConsoleDataProcessor::isTimerExecuting( long tID )
-{
+bool ConsoleDataProcessor::isTimerExecuting(long tID) {
   if (pNetComm_) {
-    return pNetComm_->isTimerExecuting( tID );
+    return pNetComm_->isTimerExecuting(tID);
   }
   return false;
 }
 
-long ConsoleDataProcessor::totalTimers()
-{
+long ConsoleDataProcessor::totalTimers() {
   if (pNetComm_) {
     return pNetComm_->totalTimers();
   }
   return 0;
 }
 
-void ConsoleDataProcessor::delAllTimers()
-{
+void ConsoleDataProcessor::delAllTimers() {
   if (pNetComm_) {
     pNetComm_->delAllTimers();
   }
 }
 
-void ConsoleDataProcessor::issueExtendedCommand( const char cID, const PyRideExtendedCommand command, 
-                                                const unsigned char * optionalData, const int optionalDataLength )
-{
+void ConsoleDataProcessor::issueExtendedCommand(
+    const char cID, const PyRideExtendedCommand command,
+    const unsigned char *optionalData, const int optionalDataLength) {
   if (pNetComm_) {
-    pNetComm_->issueExtendedCommand( cID, command, optionalData, optionalDataLength );
+    pNetComm_->issueExtendedCommand(cID, command, optionalData,
+                                    optionalDataLength);
   }
 }
 
-void ConsoleDataProcessor::setImageFormat( const char cID, ImageFormat format )
-{
+void ConsoleDataProcessor::setImageFormat(const char cID, ImageFormat format) {
   if (pNetComm_) {
-    pNetComm_->setImageFormat( cID, format );
+    pNetComm_->setImageFormat(cID, format);
   }
 }
 
-void ConsoleDataProcessor::switchCamera( const char cID, const char vID )
-{
+void ConsoleDataProcessor::switchCamera(const char cID, const char vID) {
   if (pNetComm_) {
-    pNetComm_->switchCamera( cID, vID );
+    pNetComm_->switchCamera(cID, vID);
   }
 }
 
-void ConsoleDataProcessor::issueHeartBeat( const char cID )
-{
+void ConsoleDataProcessor::issueHeartBeat(const char cID) {
   if (pNetComm_) {
-    pNetComm_->issueHeartBeat( cID );
+    pNetComm_->issueHeartBeat(cID);
   }
 }
 
-bool ConsoleDataProcessor::findClientAddress( const char cID, struct sockaddr_in & cAddr )
-{
+bool ConsoleDataProcessor::findClientAddress(const char cID,
+                                             struct sockaddr_in &cAddr) {
   if (pNetComm_) {
-    return pNetComm_->findClientAddress( cID, cAddr );
+    return pNetComm_->findClientAddress(cID, cAddr);
   }
   return false;
 }

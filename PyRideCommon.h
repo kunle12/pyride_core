@@ -10,251 +10,246 @@
 #ifndef PyRideCommon_h_DEFINED
 #define PyRideCommon_h_DEFINED
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #ifndef WIN32
 #include <sys/time.h>
 #endif
 #include "PyRideCustom.h"
 
-#define PYRIDE_PROTOCOL_VERSION  6
-#define PYRIDE_MSG_INIT          0xAC
-#define PYRIDE_MSG_END           '#'
-#define PYRIDE_MSG_MIN_LENGTH    5
-#define PYRIDE_MSG_HEADER_SIZE   4
+#define PYRIDE_PROTOCOL_VERSION 6
+#define PYRIDE_MSG_INIT 0xAC
+#define PYRIDE_MSG_END '#'
+#define PYRIDE_MSG_MIN_LENGTH 5
+#define PYRIDE_MSG_HEADER_SIZE 4
 
-#define PYRIDE_BROADCAST_IP                "255.255.255.255"
-#define PYRIDE_CONTROL_PORT                29430
-#define PYRIDE_VIDEO_STREAM_BASE_PORT      35210 //34529
-#define PYRIDE_DEFAULT_BUFFER_SIZE         4096
-#define PYRIDE_MSG_BUFFER_SIZE             10240
-#define PYRIDE_AUDIO_SAMPLE_RATE           16000
-#define PYRIDE_AUDIO_FRAME_PERIOD          0.02 // time period for an audio frame 20ms
-#define PYRIDE_AUDIO_BYTES_PER_PACKET      46
-#define PYRIDE_AUDIO_BITS_PER_SAMPLE       16
-#define PYRIDE_AUDIO_BYTES_PER_SAMPLE      (PYRIDE_AUDIO_BITS_PER_SAMPLE/8)
-#define PYRIDE_AUDIO_PLAY_BUFFERS          2
-#define PYRIDE_AUDIO_CAPTURE_BUFFERS       3
+#define PYRIDE_BROADCAST_IP "255.255.255.255"
+#define PYRIDE_CONTROL_PORT 29430
+#define PYRIDE_VIDEO_STREAM_BASE_PORT 35210 // 34529
+#define PYRIDE_DEFAULT_BUFFER_SIZE 4096
+#define PYRIDE_MSG_BUFFER_SIZE 10240
+#define PYRIDE_AUDIO_SAMPLE_RATE 16000
+#define PYRIDE_AUDIO_FRAME_PERIOD 0.02 // time period for an audio frame 20ms
+#define PYRIDE_AUDIO_BYTES_PER_PACKET 46
+#define PYRIDE_AUDIO_BITS_PER_SAMPLE 16
+#define PYRIDE_AUDIO_BYTES_PER_SAMPLE (PYRIDE_AUDIO_BITS_PER_SAMPLE / 8)
+#define PYRIDE_AUDIO_PLAY_BUFFERS 2
+#define PYRIDE_AUDIO_CAPTURE_BUFFERS 3
 
-#if defined( IOS_BUILD )
+#if defined(IOS_BUILD)
 #define PYRIDE_LOGGING_INIT
-#define DEBUG_MSG( ... ) \
-  printf( "DEBUG: " ); \
-  printf( __VA_ARGS__ );
+#define DEBUG_MSG(...)                                                         \
+  printf("DEBUG: ");                                                           \
+  printf(__VA_ARGS__);
 
-#define ERROR_MSG( ... )  \
-  printf( "ERROR: " ); \
-  printf( __VA_ARGS__ );
+#define ERROR_MSG(...)                                                         \
+  printf("ERROR: ");                                                           \
+  printf(__VA_ARGS__);
 
-#define WARNING_MSG( ... )  \
-  printf( "WARNING: " ); \
-  printf( __VA_ARGS__ );
+#define WARNING_MSG(...)                                                       \
+  printf("WARNING: ");                                                         \
+  printf(__VA_ARGS__);
 
-#define INFO_MSG( ... )  \
-  printf( "INFO: " ); \
-  printf( __VA_ARGS__ );
+#define INFO_MSG(...)                                                          \
+  printf("INFO: ");                                                            \
+  printf(__VA_ARGS__);
 
 #else // !IOS_BUILD
 #ifdef WIN32
 
-#define WM_FGNOTIFY WM_USER+1
+#define WM_FGNOTIFY WM_USER + 1
 
-#define PYRIDE_LOGGING_DECLARE( LOGNAME )
+#define PYRIDE_LOGGING_DECLARE(LOGNAME)
 
 #define PYRIDE_LOGGING_INIT
 
 #ifdef PRODUCT_RELEASE
-#define DEBUG_MSG( ... )
+#define DEBUG_MSG(...)
 #else
-#define DEBUG_MSG(...) \
-  { char outputStr[200]; \
-    sprintf_s( outputStr, 200, __VA_ARGS__ ); \
-    OutputDebugStringA( outputStr ); \
+#define DEBUG_MSG(...)                                                         \
+  {                                                                            \
+    char outputStr[200];                                                       \
+    sprintf_s(outputStr, 200, __VA_ARGS__);                                    \
+    OutputDebugStringA(outputStr);                                             \
   }
 #endif
 
-#define INFO_MSG(...) \
-  { char outputStr[200]; \
-    sprintf_s( outputStr, 200, __VA_ARGS__ ); \
-    OutputDebugStringA( outputStr ); \
+#define INFO_MSG(...)                                                          \
+  {                                                                            \
+    char outputStr[200];                                                       \
+    sprintf_s(outputStr, 200, __VA_ARGS__);                                    \
+    OutputDebugStringA(outputStr);                                             \
   }
 
 #define WARNING_MSG(...)
 
-#define ERROR_MSG(...) \
-  { char outputStr[200]; \
-    sprintf_s( outputStr, 200, __VA_ARGS__ ); \
-    OutputDebugStringA( outputStr ); \
+#define ERROR_MSG(...)                                                         \
+  {                                                                            \
+    char outputStr[200];                                                       \
+    sprintf_s(outputStr, 200, __VA_ARGS__);                                    \
+    OutputDebugStringA(outputStr);                                             \
   }
 #else
-#define PYRIDE_NO_LOGGING \
-FILE * s_pyridelog = NULL;
+#define PYRIDE_NO_LOGGING FILE *s_pyridelog = NULL;
 
-#define PYRIDE_LOGGING_DECLARE( LOGNAME ) \
-FILE * s_pyridelog = NULL; \
-const char * logFileName = LOGNAME
+#define PYRIDE_LOGGING_DECLARE(LOGNAME)                                        \
+  FILE *s_pyridelog = NULL;                                                    \
+  const char *logFileName = LOGNAME
 
-extern FILE * s_pyridelog;
-#define PYRIDE_LOGGING_INIT \
-{ \
-  const char * logDir = NULL; \
-  char * ros_log_dir = getenv("ROS_LOG_DIR"); \
-  if (ros_log_dir) { \
-    logDir = ros_log_dir; \
-  } else { \
-    char * home_dir = getenv("HOME"); \
-    static char default_log_dir[1024]; \
-    if (home_dir) { \
-      snprintf(default_log_dir, sizeof(default_log_dir), "%s/.ros/log", home_dir); \
-      default_log_dir[sizeof(default_log_dir) - 1] = '\0'; \
-      logDir = default_log_dir; \
-    } \
-  } \
-  if (logDir) { \
-    struct stat sb; \
-    if (stat( logDir, &sb ) == -1) \
-      mkdir( logDir, 0755 ); \
-    static char full_log_path[1024]; \
-    size_t len = snprintf(full_log_path, sizeof(full_log_path), "%s/%s", logDir, logFileName); \
-    if (len < sizeof(full_log_path)) { \
-      s_pyridelog = fopen( full_log_path, "a" ); \
-    } \
-  } else { \
-    s_pyridelog = fopen( logFileName, "a" ); \
-  } \
-}
+extern FILE *s_pyridelog;
+#define PYRIDE_LOGGING_INIT                                                    \
+  {                                                                            \
+    const char *logDir = NULL;                                                 \
+    char *ros_log_dir = getenv("ROS_LOG_DIR");                                 \
+    if (ros_log_dir) {                                                         \
+      logDir = ros_log_dir;                                                    \
+    } else {                                                                   \
+      char *home_dir = getenv("HOME");                                         \
+      static char default_log_dir[1024];                                       \
+      if (home_dir) {                                                          \
+        snprintf(default_log_dir, sizeof(default_log_dir), "%s/.ros/log",      \
+                 home_dir);                                                    \
+        default_log_dir[sizeof(default_log_dir) - 1] = '\0';                   \
+        logDir = default_log_dir;                                              \
+      }                                                                        \
+    }                                                                          \
+    if (logDir) {                                                              \
+      struct stat sb;                                                          \
+      if (stat(logDir, &sb) == -1)                                             \
+        mkdir(logDir, 0755);                                                   \
+      static char full_log_path[1024];                                         \
+      size_t len = snprintf(full_log_path, sizeof(full_log_path), "%s/%s",     \
+                            logDir, logFileName);                              \
+      if (len < sizeof(full_log_path)) {                                       \
+        s_pyridelog = fopen(full_log_path, "a");                               \
+      }                                                                        \
+    } else {                                                                   \
+      s_pyridelog = fopen(logFileName, "a");                                   \
+    }                                                                          \
+  }
 
-//#define s_pyridelog stdout
+// #define s_pyridelog stdout
 
 #ifdef PRODUCT_RELEASE
-#define DEBUG_MSG( ... )
+#define DEBUG_MSG(...)
 #else
-#define DEBUG_MSG( ... ) \
-if (s_pyridelog) { \
-  struct timeval now; \
-  gettimeofday( &now, NULL ); \
-  fprintf( s_pyridelog, "[%ld%c%ld] DEBUG: ", (long)now.tv_sec, 46, (long)now.tv_usec ); \
-  fprintf( s_pyridelog, __VA_ARGS__ ); \
-  fflush( s_pyridelog ); \
-}
+#define DEBUG_MSG(...)                                                         \
+  if (s_pyridelog) {                                                           \
+    struct timeval now;                                                        \
+    gettimeofday(&now, NULL);                                                  \
+    fprintf(s_pyridelog, "[%ld%c%ld] DEBUG: ", (long)now.tv_sec, 46,           \
+            (long)now.tv_usec);                                                \
+    fprintf(s_pyridelog, __VA_ARGS__);                                         \
+    fflush(s_pyridelog);                                                       \
+  }
 #endif
 
-#define INFO_MSG( ... ) \
-if (s_pyridelog) { \
-  struct timeval now; \
-  gettimeofday( &now, NULL ); \
-  fprintf( s_pyridelog, "[%ld%c%ld] INFO: ", (long)now.tv_sec, 46, (long)now.tv_usec ); \
-  fprintf( s_pyridelog, __VA_ARGS__ ); \
-  fflush( s_pyridelog ); \
-}
+#define INFO_MSG(...)                                                          \
+  if (s_pyridelog) {                                                           \
+    struct timeval now;                                                        \
+    gettimeofday(&now, NULL);                                                  \
+    fprintf(s_pyridelog, "[%ld%c%ld] INFO: ", (long)now.tv_sec, 46,            \
+            (long)now.tv_usec);                                                \
+    fprintf(s_pyridelog, __VA_ARGS__);                                         \
+    fflush(s_pyridelog);                                                       \
+  }
 
-#define WARNING_MSG( ... ) \
-if (s_pyridelog) { \
-  struct timeval now; \
-  gettimeofday( &now, NULL ); \
-  fprintf( s_pyridelog, "[%ld%c%ld] WARNING: ", (long)now.tv_sec, 46, (long)now.tv_usec ); \
-  fprintf( s_pyridelog, __VA_ARGS__ ); \
-  fflush( s_pyridelog ); \
-}
-#define ERROR_MSG( ... ) \
-if (s_pyridelog) { \
-  struct timeval now; \
-  gettimeofday( &now, NULL ); \
-  fprintf( s_pyridelog, "[%ld%c%ld] ERROR: ", (long)now.tv_sec, 46, (long)now.tv_usec ); \
-  fprintf( s_pyridelog, __VA_ARGS__ ); \
-  fflush( s_pyridelog ); \
-}
+#define WARNING_MSG(...)                                                       \
+  if (s_pyridelog) {                                                           \
+    struct timeval now;                                                        \
+    gettimeofday(&now, NULL);                                                  \
+    fprintf(s_pyridelog, "[%ld%c%ld] WARNING: ", (long)now.tv_sec, 46,         \
+            (long)now.tv_usec);                                                \
+    fprintf(s_pyridelog, __VA_ARGS__);                                         \
+    fflush(s_pyridelog);                                                       \
+  }
+#define ERROR_MSG(...)                                                         \
+  if (s_pyridelog) {                                                           \
+    struct timeval now;                                                        \
+    gettimeofday(&now, NULL);                                                  \
+    fprintf(s_pyridelog, "[%ld%c%ld] ERROR: ", (long)now.tv_sec, 46,           \
+            (long)now.tv_usec);                                                \
+    fprintf(s_pyridelog, __VA_ARGS__);                                         \
+    fflush(s_pyridelog);                                                       \
+  }
 
-#define PYRIDE_LOGGING_FINI \
-if (s_pyridelog) { \
-  fclose( s_pyridelog ); \
-}
+#define PYRIDE_LOGGING_FINI                                                    \
+  if (s_pyridelog) {                                                           \
+    fclose(s_pyridelog);                                                       \
+  }
 #endif // !WIN32
 #endif // IOS_BUILD
 
 #ifdef WIN32
 #include <winsock2.h>
-#define SOCKET_T  SOCKET
+#define SOCKET_T SOCKET
 #else
-#define SOCKET_T  int
+#define SOCKET_T int
 #define INVALID_SOCKET -1
 #endif
 
 #ifndef DEFINED_ENCRYPTION_KEY
-#pragma message ( "Make sure you change the encryption key for PyRIDE client server communication. \
-To disable this warning, set DEFINED_ENCRYPTION_KEY macro to true." )
+#pragma message(                                                               \
+    "Make sure you change the encryption key for PyRIDE client server communication. \
+To disable this warning, set DEFINED_ENCRYPTION_KEY macro to true.")
 #endif
 
-enum CommandStatus {
-  NONE = 0,
-  OK,
-  FAIL,
-  DUPLICATE
-};
+enum CommandStatus { NONE = 0, OK, FAIL, DUPLICATE };
 
-enum TeamColour {
-  BlueTeam = 1,
-  PinkTeam = 2
-};
+enum TeamColour { BlueTeam = 1, PinkTeam = 2 };
+
+typedef enum { RAW = 0, RGB, PROCESSED, RGBA, BGRA } ImageFormat;
 
 typedef enum {
-  RAW = 0,
-  RGB,
-  PROCESSED,
-  RGBA,
-  BGRA
-}ImageFormat;
-
-typedef enum {
-  ROBOT_TEAM_MSG      = 0x0,
-  ROBOT_DISCOVERY     = 0x1,
-  ROBOT_DECLARE       = 0x2,
-  ROBOT_TELEMETRY     = 0x3,
-  ROBOT_STATUS        = 0x4,
-  CLIENT_COMMAND    = 0x5,
-  CLIENT_RESPONSE   = 0x6,
-  CLIENT_SHUTDOWN   = 0x7
+  ROBOT_TEAM_MSG = 0x0,
+  ROBOT_DISCOVERY = 0x1,
+  ROBOT_DECLARE = 0x2,
+  ROBOT_TELEMETRY = 0x3,
+  ROBOT_STATUS = 0x4,
+  CLIENT_COMMAND = 0x5,
+  CLIENT_RESPONSE = 0x6,
+  CLIENT_SHUTDOWN = 0x7
 } PyRideControl;
 
 typedef enum {
-  VIDEO_SWITCH    = 0x0,
-  VIDEO_START     = 0x1,
-  VIDEO_STOP      = 0x2,
-  VIDEO_FORMAT    = 0x3,
+  VIDEO_SWITCH = 0x0,
+  VIDEO_START = 0x1,
+  VIDEO_STOP = 0x2,
+  VIDEO_FORMAT = 0x3,
   TELEMETRY_START = 0x4,
-  TELEMETRY_STOP  = 0x5,
-  CUSTOM_COMMAND  = 0x6,
-  CANCEL_CUR_OP   = 0x7
+  TELEMETRY_STOP = 0x5,
+  CUSTOM_COMMAND = 0x6,
+  CANCEL_CUR_OP = 0x7
 } PyRideCommand;
 
 typedef enum {
-  HEART_BEAT      = 0x0, // used by CLIENT_RESPONSE
-  USER_AUTH       = 0x1  // used by ROBOT_DISCOVERY only
+  HEART_BEAT = 0x0, // used by CLIENT_RESPONSE
+  USER_AUTH = 0x1   // used by ROBOT_DISCOVERY only
 } PyRideClientMode;
 
 typedef enum {
   YELLOW_GOAL = 0x1,
-  BLUE_GOAL   = 0x2,
-  BALL        = 0x3,
-  ROBOT       = 0x4
+  BLUE_GOAL = 0x2,
+  BALL = 0x3,
+  ROBOT = 0x4
 } ObjectType;
 
 typedef enum {
-  UNKNOWN    = 0x0,
-  NAO        = 0x1,
-  PR2        = 0x2,
+  UNKNOWN = 0x0,
+  NAO = 0x1,
+  PR2 = 0x2,
   TURTLE_BOT = 0x3,
-  KIOSK      = 0x4,
-  PEPPER     = 0x5,
-  REEM       = 0x6,
-  CRUZR      = 0x7
+  KIOSK = 0x4,
+  PEPPER = 0x5,
+  REEM = 0x6,
+  CRUZR = 0x7
 } RobotType;
 
 typedef enum {
-  MOBILITY      = 0x1,
-  MANIPULATION  = 0x2,
+  MOBILITY = 0x1,
+  MANIPULATION = 0x2,
   AUDIO_FEEBACK = 0x4,
   VIDEO_FEEBACK = 0x8
 } RobotCapability;
@@ -274,7 +269,7 @@ typedef struct {
   int nofaudios;
 } RobotInfo;
 
-typedef struct  {
+typedef struct {
   ObjectType objType;
   float x;
   float y;
@@ -284,7 +279,7 @@ typedef struct {
   bool isBlueTeam;
   bool isLogging;
   bool isAutoSampling;
-  int  samplingRate;
+  int samplingRate;
 } PyRideSettings;
 
 typedef struct {
@@ -311,12 +306,13 @@ typedef struct {
 } AudioSettings;
 
 static const int kHeartBeatWindow = 3; // in seconds
-static const int kSupportFrameRate[] = { 1, 2, 5, 10, 15, 20, 25, 30 };
+static const int kSupportFrameRate[] = {1, 2, 5, 10, 15, 20, 25, 30};
 static const int kErrorFrameRate = 255;
 static const int kMaxSamplingRate = 20;
 static const int kMinSamplingRate = 1;
-static const CameraQuality kSupportedCameraQuality[] = {{160, 120},{320,240},{640,480}};
-static const int kCompressionRate[] = { 95, 80, 70 };
+static const CameraQuality kSupportedCameraQuality[] = {
+    {160, 120}, {320, 240}, {640, 480}};
+static const int kCompressionRate[] = {95, 80, 70};
 static const int kMotionCommandFreq = 5;
 static const int kPublishFreq = 20;
 static const int kUDPHeartBeatWindow = 60;
@@ -327,13 +323,16 @@ static const double kDegreeToRAD = 0.01745329252;
 #ifdef __cplusplus
 extern "C" {
 #endif
-unsigned char * decodeBase64( const char * input, size_t * outLen );
-char * encodeBase64( const unsigned char * input, size_t length );
+unsigned char *decodeBase64(const char *input, size_t *outLen);
+char *encodeBase64(const unsigned char *input, size_t length);
 void endecryptInit(void);
 void endecryptFini(void);
-int decryptMessage( const unsigned char * origMesg, int origMesgLength, unsigned char ** decryptedMesg, int * decryptedMesgLength );
-int encryptMessage( const unsigned char * origMesg, int origMesgLength, unsigned char ** encryptedMesg, int * encryptedMesgLength );
-int secureSHA256Hash( const unsigned char * password, const int pwlen, unsigned char * code, const unsigned char * salt = nullptr );
+int decryptMessage(const unsigned char *origMesg, int origMesgLength,
+                   unsigned char **decryptedMesg, int *decryptedMesgLength);
+int encryptMessage(const unsigned char *origMesg, int origMesgLength,
+                   unsigned char **encryptedMesg, int *encryptedMesgLength);
+int secureSHA256Hash(const unsigned char *password, const int pwlen,
+                     unsigned char *code, const unsigned char *salt = nullptr);
 
 #ifdef __cplusplus
 }
@@ -342,6 +341,6 @@ int secureSHA256Hash( const unsigned char * password, const int pwlen, unsigned 
 #endif // USE_ENCRYPTION
 
 #ifdef WIN32
-int win_gettimeofday( struct timeval * tp,void * tz );
+int win_gettimeofday(struct timeval *tp, void *tz);
 #endif
 #endif // PyRideCommon_h_DEFINED

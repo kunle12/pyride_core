@@ -8,7 +8,7 @@
  */
 
 // This file contains list of custom command and status definitions
-// that extends the current communication between robots and 
+// that extends the current communication between robots and
 // remote clients.
 #ifndef PyRideCustom_h_DEFINED
 #define PyRideCustom_h_DEFINED
@@ -39,12 +39,13 @@ typedef enum {
   VIDEO_FEEDBACK
 } PyRideExtendedCommand;
 
-static const int NonExclusiveExtendedCommands[] = { HEAD_MOVE_TO, SPEAK,
-  LEARN_OBJECT, UPDATE_AUDIO_SETTINGS, AUDIO_FEEDBACK };
-static const int NonExcmdSize = sizeof( NonExclusiveExtendedCommands ) / sizeof( NonExclusiveExtendedCommands[0] );
+static const int NonExclusiveExtendedCommands[] = {
+    HEAD_MOVE_TO, SPEAK, LEARN_OBJECT, UPDATE_AUDIO_SETTINGS, AUDIO_FEEDBACK};
+static const int NonExcmdSize = sizeof(NonExclusiveExtendedCommands) /
+                                sizeof(NonExclusiveExtendedCommands[0]);
 
 typedef enum {
-  IDLE               = 0x0,
+  IDLE = 0x0,
   LEARNING,
   LEARNING_COMPLETE,
   FAULTY_HARDWARE,

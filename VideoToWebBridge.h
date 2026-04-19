@@ -9,17 +9,17 @@
 #ifndef VIDEO_TO_WEB_BRIDGE_H
 #define VIDEO_TO_WEB_BRIDGE_H
 
-#include <vector>
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <vector>
 
-#include "async_web_server_cpp/http_server.hpp"
-#include "async_web_server_cpp/http_request.hpp"
 #include "async_web_server_cpp/http_connection.hpp"
+#include "async_web_server_cpp/http_request.hpp"
+#include "async_web_server_cpp/http_server.hpp"
 
-#include "RTPDataReceiver.h"
 #include "PyModuleStub.h"
+#include "RTPDataReceiver.h"
 
 namespace pyride {
 
@@ -27,54 +27,62 @@ using namespace pyride_remote;
 
 class MultipartStream {
 public:
-  MultipartStream( async_web_server_cpp::HttpConnectionPtr& connection, const std::string& boundry="boundarydonotcross" );
+  MultipartStream(async_web_server_cpp::HttpConnectionPtr &connection,
+                  const std::string &boundry = "boundarydonotcross");
 
   void sendInitialHeader();
-  void sendPartHeader(const double time, const std::string& type, size_t payload_size);
+  void sendPartHeader(const double time, const std::string &type,
+                      size_t payload_size);
   void sendPartFooter();
-  void sendPartAndClear( const double time, const std::string & type, std::vector<unsigned char> & data );
-  void sendPart(const double time, const std::string& type, const boost::asio::const_buffer &buffer,
-    async_web_server_cpp::HttpConnection::ResourcePtr resource );
+  void sendPartAndClear(const double time, const std::string &type,
+                        std::vector<unsigned char> &data);
+  void sendPart(const double time, const std::string &type,
+                const boost::asio::const_buffer &buffer,
+                async_web_server_cpp::HttpConnection::ResourcePtr resource);
 
 private:
   async_web_server_cpp::HttpConnectionPtr connection_;
   std::string boundry_;
 };
 
-class JpegImageStreamer
-{
+class JpegImageStreamer {
 public:
-  JpegImageStreamer( const async_web_server_cpp::HttpRequest &request,
-    async_web_server_cpp::HttpConnectionPtr connection );
+  JpegImageStreamer(const async_web_server_cpp::HttpRequest &request,
+                    async_web_server_cpp::HttpConnectionPtr connection);
 
-  void sendImage( const double time, std::vector<unsigned char> & data );
+  void sendImage(const double time, std::vector<unsigned char> &data);
 
 private:
   MultipartStream stream_;
 };
 
-class VideoToWebBridge
-{
+class VideoToWebBridge {
 public:
-  static VideoToWebBridge * instance();
+  static VideoToWebBridge *instance();
   ~VideoToWebBridge();
 
   bool start();
-  void stop( bool selfterminate = false );
+  void stop(bool selfterminate = false);
 
-  void setPyModuleExtension( PyModuleExtension * extension ) { pyExtension_ = extension; }
+  void setPyModuleExtension(PyModuleExtension *extension) {
+    pyExtension_ = extension;
+  }
 
   bool handle_stream(const async_web_server_cpp::HttpRequest &request,
-                     async_web_server_cpp::HttpConnectionPtr connection, const char* begin, const char* end);
+                     async_web_server_cpp::HttpConnectionPtr connection,
+                     const char *begin, const char *end);
 
   bool handle_stream_viewer(const async_web_server_cpp::HttpRequest &request,
-                            async_web_server_cpp::HttpConnectionPtr connection, const char* begin, const char* end);
+                            async_web_server_cpp::HttpConnectionPtr connection,
+                            const char *begin, const char *end);
 
   bool handle_snapshot(const async_web_server_cpp::HttpRequest &request,
-                       async_web_server_cpp::HttpConnectionPtr connection, const char* begin, const char* end);
+                       async_web_server_cpp::HttpConnectionPtr connection,
+                       const char *begin, const char *end);
 
   bool handle_list_streams(const async_web_server_cpp::HttpRequest &request,
-                           async_web_server_cpp::HttpConnectionPtr connection, const char* begin, const char* end);
+                           async_web_server_cpp::HttpConnectionPtr connection,
+                           const char *begin, const char *end);
 
 private:
   int port_;
@@ -83,17 +91,17 @@ private:
   bool isRunning_;
   long dataTS_;
 
-  RTPDataReceiver * dataStream_;
-  PyModuleExtension * pyExtension_;
+  RTPDataReceiver *dataStream_;
+  PyModuleExtension *pyExtension_;
 
-  std::thread * streaming_data_thread_;
+  std::thread *streaming_data_thread_;
 
   std::shared_ptr<async_web_server_cpp::HttpServer> server_;
   async_web_server_cpp::HttpRequestHandlerGroup handler_group_;
-  std::vector<std::shared_ptr<JpegImageStreamer> > image_subscribers_;
+  std::vector<std::shared_ptr<JpegImageStreamer>> image_subscribers_;
   std::mutex subscriber_mutex_;
 
-  static VideoToWebBridge * s_pVideoToWebBridge;
+  static VideoToWebBridge *s_pVideoToWebBridge;
 
   VideoToWebBridge();
 

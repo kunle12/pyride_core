@@ -23,24 +23,23 @@ namespace pyride_remote {
 
 using namespace ros;
 
-class AudioDataReceiver
-{
+class AudioDataReceiver {
 public:
-  AudioDataReceiver( int port, int samplerate, int framesize, int packetbytes );
+  AudioDataReceiver(int port, int samplerate, int framesize, int packetbytes);
   ~AudioDataReceiver();
 
-  int grabAudioStreamData( short * audioData );
+  int grabAudioStreamData(short *audioData);
 
 private:
   int samplerate_;
   int framesize_;
   int packetbytes_;
 
-  RTPDataReceiver * dataStream_;
+  RTPDataReceiver *dataStream_;
 
-  OpusDecoder * audioDecoder_;
+  OpusDecoder *audioDecoder_;
 };
 
-} // namespace pyride
+} // namespace pyride_remote
 
 #endif /* AUDIO_DATA_RECEIVER_H */
