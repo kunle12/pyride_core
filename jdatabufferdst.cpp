@@ -56,8 +56,9 @@ boolean empty_output_buffer(j_compress_ptr cinfo) {
     return FALSE;
   }
 
+  JOCTET *old_buffer = dest->buffer;
   JOCTET *new_buffer =
-      (JOCTET *)realloc(dest->buffer, new_buffer_size * sizeof(JOCTET));
+      (JOCTET *)realloc(old_buffer, new_buffer_size * sizeof(JOCTET));
   if (new_buffer == NULL) {
     return FALSE;
   }

@@ -233,8 +233,10 @@ bool PyRideNetComm::initUDPListener() {
   }
 
 #ifdef SO_REUSEPORT
-  setsockopt(udpSocket_, SOL_SOCKET, SO_REUSEPORT, (char *)&turnon,
-             sizeof(turnon));
+  if (setsockopt(udpSocket_, SOL_SOCKET, SO_REUSEPORT, (char *)&turnon,
+                sizeof(turnon)) < 0) {
+    ERROR_MSG("PyRideNetComm::initUDPListener: failed to set SO_REUSEPORT.\n");
+  }
 #endif
 
   if (bind(udpSocket_, (struct sockaddr *)&sAddr_, sizeof(sAddr_)) < 0) {
@@ -802,7 +804,6 @@ void PyRideNetComm::processDataInput(ClientItem *client,
     } else {
       processOperationalData(client, commandData, commandDataLen);
     }
-    break;
     break;
   case CLIENT_RESPONSE:
     if (client->cID != cID) {
@@ -2032,7 +2033,8 @@ void PyRideNetComm::delTimer(long tID) {
           ERROR_MSG("Gave up waiting for timer %ld to finish.\n", tID);
           break;
         }
-        usleep(10000);
+        struct timespec ts = {0, 10000000};
+        nanosleep(&ts, NULL);
       }
       if (timerPtr == timerList_) {
         timerList_ = timerPtr->pNext;

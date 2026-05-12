@@ -20,13 +20,9 @@ namespace pyride {
 
 static const char rnd_seed[] = "This is my randomn seed generator";
 
-AppConfigManager *AppConfigManager::s_instance = NULL;
-
 AppConfigManager *AppConfigManager::instance() {
-  if (!s_instance)
-    s_instance = new AppConfigManager();
-
-  return s_instance;
+  static AppConfigManager inst;
+  return &inst;
 }
 
 AppConfigManager::AppConfigManager()
@@ -119,7 +115,7 @@ getpos:
     goto getpysvr;
   }
   posText = (char *)defaultPoseElem->GetText();
-  if (!posText || sscanf(posText, "%f %f", &posx, &posy) == 0) {
+  if (!posText || sscanf(posText, "%f %f", &posx, &posy) != 2) {
     ERROR_MSG("LoadConfig: "
               "invalid default position.");
     goto getpysvr;

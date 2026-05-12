@@ -116,9 +116,12 @@ bool DeviceController::getUDPSourcePorts(short &dataport, short &ctrlport) {
   dAddr.sin_addr.s_addr = INADDR_ANY;
   dAddr.sin_port = htons(PYRIDE_CONTROL_PORT);
 
-  if (bind(controlSocket, (struct sockaddr *)&cAddr, sizeof(cAddr)) < 0 ||
-      bind(dataSocket, (struct sockaddr *)&dAddr, sizeof(dAddr)) < 0) {
-    // ERROR_MSG( "getUDPSourcePorts: unable to bind to network interface." );
+  if (bind(controlSocket, (struct sockaddr *)&cAddr, sizeof(cAddr)) < 0) {
+    close(controlSocket);
+    close(dataSocket);
+    return found;
+  }
+  if (bind(dataSocket, (struct sockaddr *)&dAddr, sizeof(dAddr)) < 0) {
     close(controlSocket);
     close(dataSocket);
     return found;
@@ -290,7 +293,9 @@ VideoDevice::VideoDevice()
   SOCKET_T sendSock = dataChan->getSendSocket();
 
   int optval = 1228800;
-  setsockopt(sendSock, SOL_SOCKET, SO_SNDBUF, (int *)&optval, sizeof(int));
+  if (setsockopt(sendSock, SOL_SOCKET, SO_SNDBUF, (int *)&optval, sizeof(int)) < 0) {
+    ERROR_MSG("Unable to set socket send buffer size.\n");
+  }
   // streamSession_->setSessionBandwidth( 100000 );
   streamSession_->startRunning();
   this->getUDPSourcePorts(vSettings_.dataport, vSettings_.ctrlport);
@@ -535,6 +540,10 @@ void VideoDevice::saveToJPEG(const unsigned char *imageData,
   char *homedir = getenv("HOME");
   if (!homedir) {
     struct passwd *pw = getpwuid(getuid());
+    if (!pw) {
+      ERROR_MSG("Unable to determine home directory.\n");
+      return;
+    }
     homedir = pw->pw_dir;
   }
 

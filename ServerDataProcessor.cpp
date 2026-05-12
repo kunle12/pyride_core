@@ -10,12 +10,9 @@
 
 namespace pyride {
 
-ServerDataProcessor *ServerDataProcessor::s_pServerDataProcessor = NULL;
-
 ServerDataProcessor *ServerDataProcessor::instance() {
-  if (!s_pServerDataProcessor)
-    s_pServerDataProcessor = new ServerDataProcessor();
-  return s_pServerDataProcessor;
+  static ServerDataProcessor inst;
+  return &inst;
 }
 
 ServerDataProcessor::ServerDataProcessor()

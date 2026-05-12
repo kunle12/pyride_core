@@ -154,7 +154,7 @@ private:
   void (*extCommandRespFn_)(const char, const PyRideExtendedCommand,
                             const unsigned char *, const int);
 
-  static ConsoleDataProcessor *s_pConsoleDataProcessor;
+
 
   void onRobotCreated(const char cID, const int ipAddr, const RobotInfo *rinfo,
                       const VideoSettings *vsettings,

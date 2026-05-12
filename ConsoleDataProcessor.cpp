@@ -94,12 +94,9 @@ bool findClientAddress(const char cID, struct sockaddr_in *cAddr) {
   return ConsoleDataProcessor::instance()->findClientAddress(cID, *cAddr);
 }
 
-ConsoleDataProcessor *ConsoleDataProcessor::s_pConsoleDataProcessor = NULL;
-
 ConsoleDataProcessor *ConsoleDataProcessor::instance() {
-  if (!s_pConsoleDataProcessor)
-    s_pConsoleDataProcessor = new ConsoleDataProcessor();
-  return s_pConsoleDataProcessor;
+  static ConsoleDataProcessor inst;
+  return &inst;
 }
 
 ConsoleDataProcessor::ConsoleDataProcessor()
@@ -205,7 +202,7 @@ void ConsoleDataProcessor::onRobotDestroyed(const char cID) {
     cmdHandler_->onRobotDestroyed(cID);
   }
   if (telemetryRobot_ > 0) {
-    telemetryRobot_--;
+    onTelemetryStreamStop(cID);
   }
 }
 

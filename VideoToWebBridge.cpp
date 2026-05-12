@@ -241,7 +241,8 @@ void VideoToWebBridge::grabAndDispatchVideoStreamData() {
       data = rawData;
       dataSize = rawDataSize;
       gcount++;
-      usleep(1000); // 1ms
+      struct timespec ts = {0, 1000000};
+      nanosleep(&ts, NULL);
     } while (dataSize == 0 && gcount < 100);
 
     struct timeval now;

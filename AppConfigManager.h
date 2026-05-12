@@ -88,7 +88,7 @@ private:
 
   std::string configFileName_;
 
-  static AppConfigManager *s_instance;
+
 
   AppConfigManager();
 

@@ -113,7 +113,7 @@ private:
 
   RobotInfo defaultRobotInfo_;
 
-  static ServerDataProcessor *s_pServerDataProcessor;
+
 
   ServerDataProcessor();
 
