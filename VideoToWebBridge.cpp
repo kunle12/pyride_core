@@ -341,7 +341,7 @@ void MultipartStream::sendInitialHeader() {
 void MultipartStream::sendPartHeader(const double time, const std::string &type,
                                      size_t payload_size) {
   char stamp[20];
-  sprintf(stamp, "%.06lf", time);
+  snprintf(stamp, sizeof(stamp), "%.06lf", time);
   std::shared_ptr<std::vector<async_web_server_cpp::HttpHeader>> headers(
       std::make_shared<std::vector<async_web_server_cpp::HttpHeader>>());
 

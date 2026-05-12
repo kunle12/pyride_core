@@ -98,9 +98,13 @@ bool DeviceController::getUDPSourcePorts(short &dataport, short &ctrlport) {
     // ERROR_MSG( "getUDPSourcePorts:: unable to add loop source." );
     return found;
   }
-  if ((controlSocket = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET ||
-      (dataSocket = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET) {
-    // ERROR_MSG( "getUDPSourcePorts:: unable to create UDP sockets." );
+  controlSocket = socket(AF_INET, SOCK_DGRAM, 0);
+  if (controlSocket == INVALID_SOCKET) {
+    return found;
+  }
+  dataSocket = socket(AF_INET, SOCK_DGRAM, 0);
+  if (dataSocket == INVALID_SOCKET) {
+    close(controlSocket);
     return found;
   }
 
@@ -534,10 +538,10 @@ void VideoDevice::saveToJPEG(const unsigned char *imageData,
     homedir = pw->pw_dir;
   }
 
-  sprintf(filename, "%s/%s/%s_snapshot_%02d%02d%02d_%02d%02d%02d.jpg", homedir,
-          PYRIDE_SNAPSHOT_SAVE_DIRECTORY, devInfo_.deviceLabel.c_str(),
-          1900 + lt->tm_year, lt->tm_mon + 1, lt->tm_mday, lt->tm_hour,
-          lt->tm_min, lt->tm_sec);
+  snprintf(filename, sizeof(filename), "%s/%s/%s_snapshot_%02d%02d%02d_%02d%02d%02d.jpg", homedir,
+           PYRIDE_SNAPSHOT_SAVE_DIRECTORY, devInfo_.deviceLabel.c_str(),
+           1900 + lt->tm_year, lt->tm_mon + 1, lt->tm_mday, lt->tm_hour,
+           lt->tm_min, lt->tm_sec);
 
   if ((outfile = fopen(filename, "wb")) == NULL) {
     ERROR_MSG("Unable to save a snapshot at %s!\n", filename);

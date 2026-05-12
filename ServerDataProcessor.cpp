@@ -62,7 +62,7 @@ void ServerDataProcessor::removeCommandHandler(
     PyRideExtendedCommandHandler *cmdHandler) {
   if (cmdHandler) {
     PyRideExtendedCommandHandlerList::iterator iter = cmdHandlerList_.begin();
-    while ((*iter != cmdHandler) && iter != cmdHandlerList_.end()) {
+    while (iter != cmdHandlerList_.end() && (*iter != cmdHandler)) {
       iter++;
     }
     if (iter != cmdHandlerList_.end()) {

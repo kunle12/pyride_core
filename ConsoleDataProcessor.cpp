@@ -234,7 +234,8 @@ void ConsoleDataProcessor::onTelemetryStreamStart(const char cID) {
 }
 
 void ConsoleDataProcessor::onTelemetryStreamStop(const char cID) {
-  telemetryRobot_--;
+  if (telemetryRobot_ > 0)
+    telemetryRobot_--;
   if (telemetryRobot_ == 0) {
     if (isTelemetryStreamStartedFn_) {
       (isTelemetryStreamStartedFn_)(false);

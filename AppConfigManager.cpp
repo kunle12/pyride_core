@@ -129,6 +129,10 @@ getpos:
 
 getpysvr:
   enablePySvrElem = robotInfoNode->FirstChildElement("RemotePythonAccess");
+  if (!enablePySvrElem) {
+    allowPythonTelnet_ = false;
+    return;
+  }
   pySvrText = (char *)enablePySvrElem->GetText();
   allowPythonTelnet_ = (pySvrText && (strcasecmp(pySvrText, "enable") == 0));
 }
@@ -265,7 +269,7 @@ DeviceInfo *AppConfigManager::parseDeviceRecord(TiXmlNode *deviceNode) {
   TiXmlElement *labelElem = deviceNode->FirstChildElement("Label");
   TiXmlElement *activeElem = deviceNode->FirstChildElement("IsActive");
 
-  if (!idElem) {
+  if (!idElem || !nameElem || !labelElem || !activeElem) {
     ERROR_MSG("LoadConfig: invalid device record: missing tags.");
     return NULL;
   }
@@ -273,7 +277,7 @@ DeviceInfo *AppConfigManager::parseDeviceRecord(TiXmlNode *deviceNode) {
   const char *idText = idElem->GetText();
 
   if (!idText) {
-    ERROR_MSG("LoadConfig: invalid device record: mssing ID.");
+    ERROR_MSG("LoadConfig: invalid device record: missing ID.");
     return NULL;
   }
 

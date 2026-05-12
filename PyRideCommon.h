@@ -305,17 +305,17 @@ typedef struct {
   int reserved;
 } AudioSettings;
 
-static const int kHeartBeatWindow = 3; // in seconds
-static const int kSupportFrameRate[] = {1, 2, 5, 10, 15, 20, 25, 30};
-static const int kErrorFrameRate = 255;
-static const int kMaxSamplingRate = 20;
-static const int kMinSamplingRate = 1;
-static const CameraQuality kSupportedCameraQuality[] = {
+inline constexpr int kHeartBeatWindow = 3; // in seconds
+inline constexpr int kSupportFrameRate[] = {1, 2, 5, 10, 15, 20, 25, 30};
+inline constexpr int kErrorFrameRate = 255;
+inline constexpr int kMaxSamplingRate = 20;
+inline constexpr int kMinSamplingRate = 1;
+inline constexpr CameraQuality kSupportedCameraQuality[] = {
     {160, 120}, {320, 240}, {640, 480}};
-static const int kCompressionRate[] = {95, 80, 70};
-static const int kMotionCommandFreq = 5;
-static const int kPublishFreq = 20;
-static const int kUDPHeartBeatWindow = 60;
+inline constexpr int kCompressionRate[] = {95, 80, 70};
+inline constexpr int kMotionCommandFreq = 5;
+inline constexpr int kPublishFreq = 20;
+inline constexpr int kUDPHeartBeatWindow = 60;
 
 static const double kDegreeToRAD = 0.01745329252;
 

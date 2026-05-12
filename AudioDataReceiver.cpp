@@ -41,7 +41,7 @@ AudioDataReceiver::AudioDataReceiver(int port, int samplerate, int framesize,
 
   audioDecoder_ = opus_decoder_create(samplerate, 1, &err);
 
-  if (!audioDecoder_) {
+  if (!audioDecoder_ || err != OPUS_OK) {
     // ERROR_MSG( "Unable to initialise audio decoder.\n" );
     return;
   }

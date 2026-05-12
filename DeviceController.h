@@ -31,7 +31,6 @@
 #define PYRIDE_SNAPSHOT_SAVE_DIRECTORY "recordings/cameras"
 
 namespace pyride {
-
 using namespace std;
 using namespace ost;
 

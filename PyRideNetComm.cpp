@@ -386,12 +386,12 @@ void PyRideNetComm::processIncomingData(fd_set *readyFDSet) {
               break;
             }
             dataPtr++;
-            short dataCount = 0;
+            unsigned short dataCount = 0;
             memcpy(&dataCount, dataPtr, sizeof(short));
-            if (dataCount < 0) {
+            if (dataCount == 0) {
               ERROR_MSG("PyRideNetComm::continuousProcessing: "
-                        "negative data count %d on fd %d.\n",
-                        (int)dataCount, (int)fd);
+                        "zero data count on fd %d.\n",
+                        (int)fd);
               break;
             }
             dataPtr += sizeof(short);
@@ -1434,7 +1434,7 @@ void PyRideNetComm::processConsoleCommand(ClientItem *client, int subcommand,
     break;
   case VIDEO_SWITCH:
     if (dataLen == 1 && activeVideoObjs_) {
-      size_t vid = (char)(*commandData);
+      size_t vid = (unsigned char)(*commandData);
       if (vid >= activeVideoObjs_->size()) {
         ERROR_MSG("Video selection ID out of range.\n");
         break;
@@ -2026,13 +2026,12 @@ void PyRideNetComm::delTimer(long tID) {
   TimerObj *prevTimerPtr = timerPtr;
   while (timerPtr) {
     if (timerPtr->tID == tID) {
+      int delTimeout = 0;
       while (timerPtr->isExecuting) {
-        // allow the timer finishing its execution
-        // If the execution does not finish, we goes into an infinite loop,
-        // let the programmer to discover the fault from the log file.
-        ERROR_MSG("Unable to delete timer %ld: Timer thread is currently "
-                  "executing.\n",
-                  tID);
+        if (delTimeout++ > 100) {
+          ERROR_MSG("Gave up waiting for timer %ld to finish.\n", tID);
+          break;
+        }
         usleep(10000);
       }
       if (timerPtr == timerList_) {
@@ -2069,15 +2068,12 @@ bool PyRideNetComm::isTimerExecuting(long tID) {
   pthread_mutex_lock(&timer_mutex_);
 #endif
 
+  bool executing = false;
   TimerObj *timerPtr = timerList_;
   while (timerPtr) {
     if (timerPtr->tID == tID) {
-#ifdef WIN32
-      LeaveCriticalSection(&timer_criticalSection_);
-#else
-      pthread_mutex_unlock(&timer_mutex_);
-#endif
-      return timerPtr->isExecuting;
+      executing = timerPtr->isExecuting;
+      break;
     }
     timerPtr = timerPtr->pNext;
   }
@@ -2086,7 +2082,7 @@ bool PyRideNetComm::isTimerExecuting(long tID) {
 #else
   pthread_mutex_unlock(&timer_mutex_);
 #endif
-  return false;
+  return executing;
 }
 
 bool PyRideNetComm::isTimerRunning(long tID) {
@@ -2099,15 +2095,12 @@ bool PyRideNetComm::isTimerRunning(long tID) {
   pthread_mutex_lock(&timer_mutex_);
 #endif
 
+  bool running = false;
   TimerObj *timerPtr = timerList_;
   while (timerPtr) {
     if (timerPtr->tID == tID) {
-#ifdef WIN32
-      LeaveCriticalSection(&timer_criticalSection_);
-#else
-      pthread_mutex_unlock(&timer_mutex_);
-#endif
-      return true;
+      running = true;
+      break;
     }
     timerPtr = timerPtr->pNext;
   }
@@ -2116,7 +2109,7 @@ bool PyRideNetComm::isTimerRunning(long tID) {
 #else
   pthread_mutex_unlock(&timer_mutex_);
 #endif
-  return false;
+  return running;
 }
 
 void PyRideNetComm::delAllTimers() {

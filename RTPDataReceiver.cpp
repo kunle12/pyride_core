@@ -93,7 +93,7 @@ int RTPDataReceiver::grabData(unsigned char **dataBuffer,
       dataBuffer_ = new unsigned char[dataBufferSize_];
     }
     // copy data
-    int seqNum = adu->getSeqNum();
+    uint16_t seqNum = adu->getSeqNum();
     if (seqNum - lastSeqNum_ > 10) {
       printf("RTPReceiver: loss of more than 10 packets\n");
     }

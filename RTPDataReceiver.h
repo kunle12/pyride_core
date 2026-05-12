@@ -10,6 +10,7 @@
 #ifndef RTP_DATA_RECEIVER_H
 #define RTP_DATA_RECEIVER_H
 
+#include <stdint.h>
 #ifdef WIN32
 #include <process.h>
 #include <winbase.h>
@@ -51,7 +52,7 @@ private:
   struct sockaddr_in dSourceAddr_;
 
   unsigned int receiveTimestamp_;
-  unsigned int lastSeqNum_;
+  uint16_t lastSeqNum_;
   unsigned char *dataBuffer_;
   int dataBufferSize_;
   int existDataSize_;

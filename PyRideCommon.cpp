@@ -186,10 +186,10 @@ int decryptMessage(const unsigned char *origMesg, int origMesgLength,
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
   EVP_CIPHER_CTX ectx;
   EVP_CIPHER_CTX *ctx = &ectx;
+  EVP_CIPHER_CTX_init(ctx);
 #else
   EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
 #endif
-  EVP_CIPHER_CTX_init(ctx);
   EVP_DecryptInit(ctx, EVP_bf_cbc(), encrypt_key, encrypt_iv);
 
   memset(decryptbuffer, 0, PYRIDE_MSG_ENDECRYPT_BUFFER_SIZE);
@@ -251,10 +251,10 @@ int encryptMessage(const unsigned char *origMesg, int origMesgLength,
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
   EVP_CIPHER_CTX ectx;
   EVP_CIPHER_CTX *ctx = &ectx;
+  EVP_CIPHER_CTX_init(ctx);
 #else
   EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
 #endif
-  EVP_CIPHER_CTX_init(ctx);
   EVP_EncryptInit(ctx, EVP_bf_cbc(), encrypt_key, encrypt_iv);
 
   memset(encryptbuffer, 0, PYRIDE_MSG_ENDECRYPT_BUFFER_SIZE);
@@ -306,7 +306,9 @@ int encryptMessage(const unsigned char *origMesg, int origMesgLength,
   return 1;
 }
 
-#endif // USE_ENCRYPTION
+#endif // end of main USE_ENCRYPTION block for encrypt/decrypt
+
+#ifdef USE_ENCRYPTION
 int secureSHA256Hash(const unsigned char *password, const int pwlen,
                      unsigned char *code, const unsigned char *salt) {
   unsigned char *buf = NULL;
@@ -335,6 +337,7 @@ int secureSHA256Hash(const unsigned char *password, const int pwlen,
   free(buf);
   return 0;
 }
+#endif // USE_ENCRYPTION
 
 #ifdef WIN32
 #define FACTOR 0x19db1ded53e8000
