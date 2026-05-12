@@ -1,32 +1,34 @@
-#include <string.h>
-#include <locale>
-#include <codecvt>
-#include <string>
-#include <cstdio>
 #include "PythonServer.h"
+#include <codecvt>
+#include <cstdio>
+#include <locale>
+#include <string.h>
+#include <string>
 
 namespace pyride {
 
-static int utf8SeqLen( unsigned char c )
-{
-  if (c < 0x80) return 1;
-  if (c >= 0xC2 && c < 0xE0) return 2;
-  if (c >= 0xE0 && c < 0xF0) return 3;
-  if (c >= 0xF0 && c < 0xF8) return 4;
+static int utf8SeqLen(unsigned char c) {
+  if (c < 0x80)
+    return 1;
+  if (c >= 0xC2 && c < 0xE0)
+    return 2;
+  if (c >= 0xE0 && c < 0xF0)
+    return 3;
+  if (c >= 0xF0 && c < 0xF8)
+    return 4;
   return 0;
 }
 
-static int utf8PrevCharPos( const std::string & s, int pos )
-{
-  if (pos <= 0) return 0;
+static int utf8PrevCharPos(const std::string &s, int pos) {
+  if (pos <= 0)
+    return 0;
   pos--;
   while (pos > 0 && ((unsigned char)s[pos] & 0xC0) == 0x80)
     pos--;
   return pos;
 }
 
-static int displayWidth( const std::string & s )
-{
+static int displayWidth(const std::string &s) {
   int width = 0;
   size_t i = 0;
   while (i < s.length()) {
@@ -52,7 +54,7 @@ static int displayWidth( const std::string & s )
   return width;
 }
 
-#define max( a, b ) (a > b) ? a : b
+#define max(a, b) (a > b) ? a : b
 
 #if PY_MAJOR_VERSION >= 3
 #define PyInt_FromLong PyLong_FromLong
@@ -1091,19 +1093,35 @@ PythonSession::~PythonSession() {
   charPos_ = 0;
 }
 
-void PythonSession::connectReady()
-{
-  unsigned char options[] =
-  {
-    TELNET_IAC, TELNET_DO, TELNET_LINEMODE,
-    TELNET_IAC, TELNET_SB, TELNET_LINEMODE, 1, 4, TELNET_IAC, TELNET_SE,
-    TELNET_IAC, TELNET_WILL, TELNET_ECHO,
-    TELNET_IAC, TELNET_DO, TELNET_CHARSET,
-    TELNET_IAC, TELNET_SB, TELNET_CHARSET, 1,
-      'U', 'T', 'F', '-', '8',
-      TELNET_IAC, TELNET_SE,
-    0
-  };
+void PythonSession::connectReady() {
+  unsigned char options[] = {TELNET_IAC,
+                             TELNET_DO,
+                             TELNET_LINEMODE,
+                             TELNET_IAC,
+                             TELNET_SB,
+                             TELNET_LINEMODE,
+                             1,
+                             4,
+                             TELNET_IAC,
+                             TELNET_SE,
+                             TELNET_IAC,
+                             TELNET_WILL,
+                             TELNET_ECHO,
+                             TELNET_IAC,
+                             TELNET_DO,
+                             TELNET_CHARSET,
+                             TELNET_IAC,
+                             TELNET_SB,
+                             TELNET_CHARSET,
+                             1,
+                             'U',
+                             'T',
+                             'F',
+                             '-',
+                             '8',
+                             TELNET_IAC,
+                             TELNET_SE,
+                             0};
 
   this->write((char *)options);
   this->write(server_->welcomeStr().c_str());
@@ -1155,11 +1173,11 @@ void PythonSession::processInput(PythonServer::ClientItem *client,
     }
 
     if (c >= 128) {
-      int seqLen = utf8SeqLen( (unsigned char)c );
+      int seqLen = utf8SeqLen((unsigned char)c);
       if (seqLen > 1) {
         if ((int)readBuffer_.size() < seqLen)
           break;
-        this->handleUTF8Char( seqLen );
+        this->handleUTF8Char(seqLen);
         continue;
       } else {
         readBuffer_.pop_front();
@@ -1288,20 +1306,19 @@ bool PythonSession::handleVTCommand() {
  *   This method handles a single character. It appends or inserts it
  *   into the buffer at the current position.
  */
-void PythonSession::handleChar()
-{
-  currentLine_.insert( charPos_, 1, (char)readBuffer_.front() );
+void PythonSession::handleChar() {
+  currentLine_.insert(charPos_, 1, (char)readBuffer_.front());
   charPos_++;
   readBuffer_.pop_front();
 
-  std::string rest = currentLine_.substr( charPos_ );
-  this->write( currentLine_.substr( charPos_ - 1 ).c_str() );
+  std::string rest = currentLine_.substr(charPos_);
+  this->write(currentLine_.substr(charPos_ - 1).c_str());
   if (!rest.empty()) {
-    int restWidth = displayWidth( rest );
+    int restWidth = displayWidth(rest);
     if (restWidth > 0) {
       char ctrl[32];
-      snprintf( ctrl, sizeof(ctrl), "\033[%dD", restWidth );
-      this->write( ctrl );
+      snprintf(ctrl, sizeof(ctrl), "\033[%dD", restWidth);
+      this->write(ctrl);
     }
   }
 }
@@ -1309,26 +1326,25 @@ void PythonSession::handleChar()
 /**
  *   This method handles a multi-byte UTF-8 character.
  */
-void PythonSession::handleUTF8Char( int seqLen )
-{
+void PythonSession::handleUTF8Char(int seqLen) {
   std::string utf8Char;
   for (int i = 0; i < seqLen; i++) {
     utf8Char += (char)readBuffer_.front();
     readBuffer_.pop_front();
   }
 
-  currentLine_.insert( charPos_, utf8Char );
+  currentLine_.insert(charPos_, utf8Char);
   charPos_ += seqLen;
 
-  std::string rest = currentLine_.substr( charPos_ );
-  this->write( utf8Char.c_str() );
+  std::string rest = currentLine_.substr(charPos_);
+  this->write(utf8Char.c_str());
   if (!rest.empty()) {
-    this->write( rest.c_str() );
-    int restWidth = displayWidth( rest );
+    this->write(rest.c_str());
+    int restWidth = displayWidth(rest);
     if (restWidth > 0) {
       char ctrl[32];
-      snprintf( ctrl, sizeof(ctrl), "\033[%dD", restWidth );
-      this->write( ctrl );
+      snprintf(ctrl, sizeof(ctrl), "\033[%dD", restWidth);
+      this->write(ctrl);
     }
   }
 }
@@ -1390,30 +1406,30 @@ void PythonSession::handleLine(PythonServer::ClientItem *client) {
  */
 void PythonSession::handleDel() {
   if (charPos_ > 0) {
-    int start = utf8PrevCharPos( currentLine_, charPos_ );
+    int start = utf8PrevCharPos(currentLine_, charPos_);
     int charLen = charPos_ - start;
 
-    int delWidth = displayWidth( currentLine_.substr( start, charLen ) );
+    int delWidth = displayWidth(currentLine_.substr(start, charLen));
     charPos_ = start;
-    currentLine_.erase( start, charLen );
+    currentLine_.erase(start, charLen);
 
     if (delWidth == 1) {
-      this->write( "\b" ERASE_EOL );
+      this->write("\b" ERASE_EOL);
     } else {
       char ctrl[20];
-      snprintf( ctrl, sizeof(ctrl), "\033[%dD", delWidth );
-      this->write( ctrl );
-      this->write( ERASE_EOL );
+      snprintf(ctrl, sizeof(ctrl), "\033[%dD", delWidth);
+      this->write(ctrl);
+      this->write(ERASE_EOL);
     }
 
-    std::string rest = currentLine_.substr( charPos_ );
-    this->write( rest.c_str() );
+    std::string rest = currentLine_.substr(charPos_);
+    this->write(rest.c_str());
 
-    int restWidth = displayWidth( rest );
+    int restWidth = displayWidth(rest);
     if (restWidth > 0) {
       char ctrl[20];
-      snprintf( ctrl, sizeof(ctrl), "\033[%dD", restWidth );
-      this->write( ctrl );
+      snprintf(ctrl, sizeof(ctrl), "\033[%dD", restWidth);
+      this->write(ctrl);
     }
   }
 
@@ -1482,12 +1498,12 @@ void PythonSession::handleTab() {
             this->write("\r\n");
           }
           this->writePrompt();
-          this->write( currentLine_.c_str() );
+          this->write(currentLine_.c_str());
           {
-            int w = displayWidth( currentLine_.substr( charPos_ ) );
+            int w = displayWidth(currentLine_.substr(charPos_));
             char ctrl[32];
-            snprintf( ctrl, sizeof(ctrl), "\033[%dD", w );
-            this->write( ctrl );
+            snprintf(ctrl, sizeof(ctrl), "\033[%dD", w);
+            this->write(ctrl);
           }
         }
       } else { // cause a beep
@@ -1554,15 +1570,16 @@ void PythonSession::handleDown() {
  */
 void PythonSession::handleLeft() {
   if (charPos_ > 0) {
-    int prevStart = utf8PrevCharPos( currentLine_, charPos_ );
-    int charWidth = displayWidth( currentLine_.substr( prevStart, charPos_ - prevStart ) );
+    int prevStart = utf8PrevCharPos(currentLine_, charPos_);
+    int charWidth =
+        displayWidth(currentLine_.substr(prevStart, charPos_ - prevStart));
     charPos_ = prevStart;
     if (charWidth == 1) {
-      this->write( "\033[D" );
+      this->write("\033[D");
     } else {
       char ctrl[20];
-      snprintf( ctrl, sizeof(ctrl), "\033[%dD", charWidth );
-      this->write( ctrl );
+      snprintf(ctrl, sizeof(ctrl), "\033[%dD", charWidth);
+      this->write(ctrl);
     }
   }
 }
@@ -1572,15 +1589,15 @@ void PythonSession::handleLeft() {
  */
 void PythonSession::handleRight() {
   if (charPos_ < currentLine_.length()) {
-    int seqLen = utf8SeqLen( (unsigned char)currentLine_[charPos_] );
-    int charWidth = displayWidth( currentLine_.substr( charPos_, seqLen ) );
+    int seqLen = utf8SeqLen((unsigned char)currentLine_[charPos_]);
+    int charWidth = displayWidth(currentLine_.substr(charPos_, seqLen));
     charPos_ += seqLen;
     if (charWidth == 1) {
-      this->write( "\033[C" );
+      this->write("\033[C");
     } else {
       char ctrl[20];
-      snprintf( ctrl, sizeof(ctrl), "\033[%dC", charWidth );
-      this->write( ctrl );
+      snprintf(ctrl, sizeof(ctrl), "\033[%dC", charWidth);
+      this->write(ctrl);
     }
   }
 }
@@ -1590,10 +1607,10 @@ void PythonSession::handleRight() {
  */
 void PythonSession::handleHome() {
   if (charPos_ > 0) {
-    int w = displayWidth( currentLine_.substr( 0, charPos_ ) );
+    int w = displayWidth(currentLine_.substr(0, charPos_));
     char ctrl[20];
-    snprintf( ctrl, sizeof(ctrl), "\033[%dD", w );
-    this->write( ctrl );
+    snprintf(ctrl, sizeof(ctrl), "\033[%dD", w);
+    this->write(ctrl);
     charPos_ = 0;
   }
   readBuffer_.pop_front();
@@ -1604,10 +1621,10 @@ void PythonSession::handleHome() {
  */
 void PythonSession::handleEnd() {
   if (charPos_ < currentLine_.length()) {
-    int w = displayWidth( currentLine_.substr( charPos_ ) );
+    int w = displayWidth(currentLine_.substr(charPos_));
     char ctrl[20];
-    snprintf( ctrl, sizeof(ctrl), "\033[%dC", w );
-    this->write( ctrl );
+    snprintf(ctrl, sizeof(ctrl), "\033[%dC", w);
+    this->write(ctrl);
     charPos_ = currentLine_.length();
   }
   readBuffer_.pop_front();
@@ -1627,11 +1644,11 @@ void PythonSession::tabCompletion(const std::string &fullStr,
   }
 
   charPos_ += rlen;
-  int restWidth = displayWidth( currentLine_.substr( charPos_ ) );
+  int restWidth = displayWidth(currentLine_.substr(charPos_));
   if (restWidth > 0) {
     char ctrl[32];
-    snprintf( ctrl, sizeof(ctrl), "\033[%dD", restWidth );
-    this->write( ctrl );
+    snprintf(ctrl, sizeof(ctrl), "\033[%dD", restWidth);
+    this->write(ctrl);
   }
 }
 void PythonSession::write(const char *str) {

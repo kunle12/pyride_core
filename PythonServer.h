@@ -27,9 +27,9 @@
 #define DEFAULT_PYTHON_SCRIPT_PATH "/home/nao/naoqi/lib/python"
 #endif
 
-// define telnet protocol 
-#define TELNET_ECHO     1
-#define TELNET_CHARSET  42
+// define telnet protocol
+#define TELNET_ECHO 1
+#define TELNET_CHARSET 42
 #define TELNET_LINEMODE 34
 #define TELNET_SE 240
 #define TELNET_SB 250
@@ -171,8 +171,9 @@ public:
   PythonSession(PythonServer *server, SOCKET_T fd);
   ~PythonSession();
 
-  void processInput( PythonServer::ClientItem * client, unsigned char * recvData, int bytesReceived );
-  void handleUTF8Char( int seqLen );
+  void processInput(PythonServer::ClientItem *client, unsigned char *recvData,
+                    int bytesReceived);
+  void handleUTF8Char(int seqLen);
   void sayGoodBye();
 
   void write(const char *str);
