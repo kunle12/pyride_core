@@ -170,8 +170,8 @@ public:
   PythonSession(PythonServer *server, SOCKET_T fd);
   ~PythonSession();
 
-  void processInput(PythonServer::ClientItem *client, unsigned char *recvData,
-                    int bytesReceived);
+  void processInput( PythonServer::ClientItem * client, unsigned char * recvData, int bytesReceived );
+  void handleUTF8Char( int seqLen );
   void sayGoodBye();
 
   void write(const char *str);
