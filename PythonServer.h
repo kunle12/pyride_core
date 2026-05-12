@@ -27,8 +27,9 @@
 #define DEFAULT_PYTHON_SCRIPT_PATH "/home/nao/naoqi/lib/python"
 #endif
 
-// define telnet protocol
-#define TELNET_ECHO 1
+// define telnet protocol 
+#define TELNET_ECHO     1
+#define TELNET_CHARSET  42
 #define TELNET_LINEMODE 34
 #define TELNET_SE 240
 #define TELNET_SB 250

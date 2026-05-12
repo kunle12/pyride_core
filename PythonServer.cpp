@@ -1091,12 +1091,19 @@ PythonSession::~PythonSession() {
   charPos_ = 0;
 }
 
-void PythonSession::connectReady() {
-  unsigned char options[] = {TELNET_IAC,  TELNET_DO,  TELNET_LINEMODE,
-                             TELNET_IAC,  TELNET_SB,  TELNET_LINEMODE,
-                             1,           4,          TELNET_IAC,
-                             TELNET_SE,   TELNET_IAC, TELNET_WILL,
-                             TELNET_ECHO, 0};
+void PythonSession::connectReady()
+{
+  unsigned char options[] =
+  {
+    TELNET_IAC, TELNET_DO, TELNET_LINEMODE,
+    TELNET_IAC, TELNET_SB, TELNET_LINEMODE, 1, 4, TELNET_IAC, TELNET_SE,
+    TELNET_IAC, TELNET_WILL, TELNET_ECHO,
+    TELNET_IAC, TELNET_DO, TELNET_CHARSET,
+    TELNET_IAC, TELNET_SB, TELNET_CHARSET, 1,
+      'U', 'T', 'F', '-', '8',
+      TELNET_IAC, TELNET_SE,
+    0
+  };
 
   this->write((char *)options);
   this->write(server_->welcomeStr().c_str());
@@ -1281,21 +1288,22 @@ bool PythonSession::handleVTCommand() {
  *   This method handles a single character. It appends or inserts it
  *   into the buffer at the current position.
  */
-void PythonSession::handleChar() {
-  currentLine_.insert(charPos_, 1, (char)readBuffer_.front());
-  int len = currentLine_.length() - charPos_;
-  this->write(currentLine_.substr(charPos_, len).c_str());
-
-  char *bstr = new char[len];
-  for (int i = 0; i < len - 1; i++)
-    bstr[i] = '\b';
-  bstr[len - 1] = '\0';
-
-  this->write(bstr);
-  delete[] bstr;
-
+void PythonSession::handleChar()
+{
+  currentLine_.insert( charPos_, 1, (char)readBuffer_.front() );
   charPos_++;
   readBuffer_.pop_front();
+
+  std::string rest = currentLine_.substr( charPos_ );
+  this->write( currentLine_.substr( charPos_ - 1 ).c_str() );
+  if (!rest.empty()) {
+    int restWidth = displayWidth( rest );
+    if (restWidth > 0) {
+      char ctrl[32];
+      snprintf( ctrl, sizeof(ctrl), "\033[%dD", restWidth );
+      this->write( ctrl );
+    }
+  }
 }
 
 /**
