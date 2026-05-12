@@ -1163,11 +1163,12 @@ void PythonSession::processInput(PythonServer::ClientItem *client,
       continue;
     }
 
-    // If we got a printable ASCII char or a non-ASCII (UTF-8) byte,
-    // handle it.  Non-ASCII bytes (>= 128) are part of multi-byte
-    // UTF-8 sequences (e.g. Chinese characters).
+    // Printable ASCII (0x20-0x7E) goes to handleChar.
+    // Non-ASCII (>= 128) may be part of multi-byte UTF-8 sequences
+    // (e.g. Chinese characters).  Use explicit range instead of
+    // isprint() to avoid locale-dependent behaviour.
 
-    if (isprint(c)) {
+    if (c >= 32 && c < 127) {
       this->handleChar();
       continue;
     }
@@ -1514,17 +1515,14 @@ void PythonSession::handleTab() {
   } else {
     // replace tab with two spaces
     currentLine_.insert(charPos_, "  ");
-    int len = currentLine_.length() - charPos_;
-    this->write(currentLine_.substr(charPos_, len).c_str());
+    this->write(currentLine_.substr(charPos_).c_str());
 
-    int dflen = len - 2;
-    char *bstr = new char[dflen + 1];
-    for (int i = 0; i < dflen; i++)
-      bstr[i] = '\b';
-    bstr[dflen] = '\0';
-
-    this->write(bstr);
-    delete[] bstr;
+    {
+      int w = displayWidth(currentLine_.substr(charPos_ + 2));
+      char ctrl[32];
+      snprintf(ctrl, sizeof(ctrl), "\033[%dD", w);
+      this->write(ctrl);
+    }
 
     charPos_ += 2;
   }

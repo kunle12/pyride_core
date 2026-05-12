@@ -10,9 +10,9 @@
 #ifndef JDATASTREAM_DST_H
 #define JDATASTREAM_DST_H
 
+#include <stdio.h>
 #include <jerror.h>
 #include <jpeglib.h>
-#include <stdio.h>
 
 #define MAX_JPEG_BUFFER_SIZE 921600
 #define DEFAULT_IMAGE_SIZE 28672 /* choose an efficiently fwrite'able size */

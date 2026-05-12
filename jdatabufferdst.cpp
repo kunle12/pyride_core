@@ -7,6 +7,7 @@
 
 /* this is not a core library module, so it doesn't define JPEG_INTERNALS */
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "jdatabufferdst.h"
 
