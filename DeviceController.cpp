@@ -445,6 +445,9 @@ bool VideoDevice::processImageData(const unsigned char *rawData,
         return false;
       myDataPtr = outBuffer_;
       myDataSize = outBufferSize_;
+    } else if (vSettings_.format == RGBA || vSettings_.format == PROCESSED) {
+      myDataPtr = (unsigned char *)rawData;
+      myDataSize = rawDataSize;
     } else {
       return false;
     }

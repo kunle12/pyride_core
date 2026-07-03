@@ -1060,18 +1060,14 @@ void PythonServer::broadcastMessage(
 #ifdef USE_ENCRYPTION
   unsigned char *encryptedMesg = NULL;
   int encryptedLength = 0;
-  pthread_mutex_lock(&t_mutex_);
   if (encryptMessage(bcMesg, dataLength, &encryptedMesg, &encryptedLength) ==
       1) {
     sendto(udpSocket_, encryptedMesg, encryptedLength, 0,
            (struct sockaddr *)&bcAddr_, sizeof(bcAddr_));
   }
-  pthread_mutex_unlock(&t_mutex_);
 #else
-  pthread_mutex_lock(&t_mutex_);
   sendto(udpSocket_, bcMesg, dataLength, 0, (struct sockaddr *)&bcAddr_,
          sizeof(bcAddr_));
-  pthread_mutex_unlock(&t_mutex_);
 #endif
   delete[] bcMesg;
 }

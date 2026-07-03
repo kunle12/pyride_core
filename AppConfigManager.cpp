@@ -407,6 +407,7 @@ bool AppConfigManager::delUser(const char *name) {
   UserDataList::iterator iter;
   for (iter = userDataList_.begin(); iter != userDataList_.end(); iter++) {
     if ((*iter)->name.compare(name) == 0) {
+      delete *iter;
       userDataList_.erase(iter);
       return true;
     }
@@ -511,7 +512,7 @@ void AppConfigManager::saveConfig() {
   }
   fprintf(outFile, "<PyRIDE>\n");
   fprintf(outFile, "  <TeamColour> %s </TeamColour>\n",
-          (clientID_ & BlueTeam) ? "blue" : "red");
+          (clientID_ & BlueTeam) ? "blue" : "pink");
   fprintf(outFile, "  <MemberID> %d </MemberID>\n", (clientID_ >> 4) & 0xf);
   fprintf(outFile, "  <DefaultPosition> %.1f %.1f </DefaultPosition>\n",
           defaultPose_.x, defaultPose_.y);

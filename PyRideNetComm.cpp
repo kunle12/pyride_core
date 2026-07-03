@@ -487,7 +487,8 @@ void PyRideNetComm::processIncomingData(fd_set *readyFDSet) {
       }
     }
 #ifndef PYRIDE_REMOTE_CLIENT
-    if (clientPtr->nextHeartBeat > 0 && clientPtr->nextHeartBeat < now.tv_sec) {
+    if (clientPtr->fd != INVALID_SOCKET && clientPtr->nextHeartBeat > 0 &&
+        clientPtr->nextHeartBeat < now.tv_sec) {
       clientPtr->missingHeartBeats++;
       WARNING_MSG("Missing heartbeat from client %d\n", clientPtr->fd);
       if (clientPtr->missingHeartBeats > 2) {
@@ -534,12 +535,23 @@ void PyRideNetComm::processTimer(void *data) {
   pDataHandler_->onTimer(mytimer->tID);
   mytimer->isExecuting = false;
 
+  if (mytimer->pendingDelete) {
+    // delTimer was called from within the callback; clean up here
+    delete mytimer;
+    return;
+  }
+
   if (mytimer->remainCount == 0) {
     mytimer->isExecuting = true;
     pDataHandler_->onTimerLapsed(mytimer->tID);
     mytimer->isExecuting = false;
-    // remove the timer
-    delTimer(mytimer->tID);
+
+    if (mytimer->pendingDelete) {
+      // delTimer was called from within onTimerLapsed; clean up here
+      delete mytimer;
+    } else {
+      delTimer(mytimer->tID);
+    }
   }
 }
 
@@ -1982,6 +1994,7 @@ long PyRideNetComm::addTimer(float initialTime, long repeats, float interval) {
   newTimer->pNext = NULL;
   newTimer->remainCount = (repeats == 0) ? 1 : repeats;
   newTimer->isExecuting = false;
+  newTimer->pendingDelete = false;
   newTimer->interval = (int)floorf(interval * 10);
 #ifdef WIN32
   newTimer->timerThread = (HANDLE)NULL;
@@ -2027,26 +2040,22 @@ void PyRideNetComm::delTimer(long tID) {
   TimerObj *prevTimerPtr = timerPtr;
   while (timerPtr) {
     if (timerPtr->tID == tID) {
-      int delTimeout = 0;
-      while (timerPtr->isExecuting) {
-        if (delTimeout++ > 100) {
-          ERROR_MSG("Gave up waiting for timer %ld to finish.\n", tID);
-          break;
-        }
-        struct timespec ts = {0, 10000000};
-        nanosleep(&ts, NULL);
-      }
-      if (timerPtr == timerList_) {
-        timerList_ = timerPtr->pNext;
-        prevTimerPtr = timerList_;
-        delete timerPtr;
-        timerPtr = timerList_;
+      if (timerPtr->isExecuting) {
+        // Timer callback is currently running; mark for deferred deletion
+        timerPtr->pendingDelete = true;
       } else {
-        prevTimerPtr->pNext = timerPtr->pNext;
-        delete timerPtr;
-        timerPtr = prevTimerPtr->pNext;
+        if (timerPtr == timerList_) {
+          timerList_ = timerPtr->pNext;
+          prevTimerPtr = timerList_;
+          delete timerPtr;
+          timerPtr = timerList_;
+        } else {
+          prevTimerPtr->pNext = timerPtr->pNext;
+          delete timerPtr;
+          timerPtr = prevTimerPtr->pNext;
+        }
+        timerCount_--;
       }
-      timerCount_--;
     } else {
       prevTimerPtr = timerPtr;
       timerPtr = timerPtr->pNext;
@@ -2169,6 +2178,10 @@ void PyRideNetComm::checkTimers() {
   TimerObj *timerPtr = timerList_;
 
   while (timerPtr) {
+    if (timerPtr->pendingDelete) {
+      timerPtr = timerPtr->pNext;
+      continue;
+    }
     if (timerPtr->nextTrigTime <= nowin10th && timerPtr->remainCount != 0) {
       if (timerPtr->remainCount > 0) {
         timerPtr->remainCount--;

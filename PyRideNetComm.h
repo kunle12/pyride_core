@@ -202,6 +202,7 @@ private:
     int interval;      // unit in 10th of a second
     long nextTrigTime; // unit in 10th of a second
     bool isExecuting;
+    bool pendingDelete;
 #ifdef WIN32
     HANDLE timerThread;
 #else
