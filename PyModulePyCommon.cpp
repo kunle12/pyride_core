@@ -11,39 +11,45 @@
 #ifdef DEFINE_COMMON_PYMODULE_METHODS
 {"declare", (PyCFunction)PyModule_declare, METH_NOARGS,
  "Declare the robot to all available PyRIDE remote clients."},
-    {"disconnect", (PyCFunction)PyModule_disconnect, METH_VARARGS,
+{"disconnect", (PyCFunction)PyModule_disconnect,
+     METH_VARARGS | METH_KEYWORDS,
      "Disconnect PyRIDE one or all consoles."},
     {"takeCameraSnapshot", (PyCFunction)PyModule_TakeCameraSnapshot,
-     METH_VARARGS, "Use robot camera to take a snapshot."},
+     METH_VARARGS | METH_KEYWORDS, "Use robot camera to take a snapshot."},
     {"getMyIPAddress", (PyCFunction)PyModule_GetMyIPAddress, METH_NOARGS,
      "Get the current robot IP address."},
     {"updateOperationalStatus", (PyCFunction)PyModule_UpdateOperationalStatus,
-     METH_VARARGS, "Dispatch robot operational data to PyRIDE consoles."},
+     METH_VARARGS | METH_KEYWORDS,
+     "Dispatch robot operational data to PyRIDE consoles."},
     {"updateRobotTelemetry", (PyCFunction)PyModule_UpdateRobotTelemetry,
-     METH_VARARGS, "Dispatch robot telemetry data."},
+     METH_VARARGS | METH_KEYWORDS, "Dispatch robot telemetry data."},
     {"listCurrentUsers", (PyCFunction)PyModule_ListCurrentUsers, METH_NOARGS,
      "List all users who are currently log on the robot."},
     {"listAllUsers", (PyCFunction)PyModule_ListAllUsers, METH_NOARGS,
      "List all users on the robot."},
     {"blockRemoteExclusiveControl",
-     (PyCFunction)PyModule_BlockRemoteExclusiveControl, METH_VARARGS,
+     (PyCFunction)PyModule_BlockRemoteExclusiveControl,
+     METH_VARARGS | METH_KEYWORDS,
      "Block or unblock remote client exclusive control of the robot."},
     {"saveConfiguration", (PyCFunction)PyModule_SaveConfiguration, METH_NOARGS,
      "Save the current PyRIDE configuration."},
-    {"addUser", (PyCFunction)PyModule_AddUser, METH_VARARGS,
+    {"addUser", (PyCFunction)PyModule_AddUser, METH_VARARGS | METH_KEYWORDS,
      "Add a new user on the robot."},
-    {"removeUser", (PyCFunction)PyModule_RemoveUser, METH_VARARGS,
+    {"removeUser", (PyCFunction)PyModule_RemoveUser, METH_VARARGS | METH_KEYWORDS,
      "Remove an existing user on the robot."},
     {"changeUserPassword", (PyCFunction)PyModule_ChangeUserPassword,
-     METH_VARARGS, "Change the password of an existing user on the robot."},
-    {"addTimer", (PyCFunction)PyModule_AddTimer, METH_VARARGS,
+     METH_VARARGS | METH_KEYWORDS,
+     "Change the password of an existing user on the robot."},
+    {"addTimer", (PyCFunction)PyModule_AddTimer, METH_VARARGS | METH_KEYWORDS,
      "Add a new timer object."},
-    {"isTimerRunning", (PyCFunction)PyModule_IsTimerRunning, METH_VARARGS,
+    {"isTimerRunning", (PyCFunction)PyModule_IsTimerRunning,
+     METH_VARARGS | METH_KEYWORDS,
      "Check a timer with ID is still running."},
-    {"isTimerExecuting", (PyCFunction)PyModule_IsTimerExecuting, METH_VARARGS,
+    {"isTimerExecuting", (PyCFunction)PyModule_IsTimerExecuting,
+     METH_VARARGS | METH_KEYWORDS,
      "Check a timer with ID is still executing."},
-    {"removeTimer", (PyCFunction)PyModule_RemoveTimer, METH_VARARGS,
-     "Remove a timer object with ID."},
+    {"removeTimer", (PyCFunction)PyModule_RemoveTimer,
+     METH_VARARGS | METH_KEYWORDS, "Remove a timer object with ID."},
     {"removeAllTimers", (PyCFunction)PyModule_RemoveAllTimers, METH_NOARGS,
      "Remove all timer objects."},
     {"listActiveVideoObjects", (PyCFunction)PyModule_ActiveVideoObjects,
@@ -84,11 +90,16 @@
  * no username is provided. All connected clients will be disconnected. \return
  * None
  */
-static PyObject *PyModule_disconnect(PyObject *self, PyObject *args) {
+static const char *kDisconnectKWlist[] = {"username", NULL};
+
+static PyObject *PyModule_disconnect(PyObject *self, PyObject *args,
+                                     PyObject *keywds) {
   (void)self;
   char *username = NULL;
 
-  if (!PyArg_ParseTuple(args, "|s", &username)) {
+  if (!PyArg_ParseTupleAndKeywords(args, keywds, "|s",
+                                   const_cast<char **>(kDisconnectKWlist),
+                                   &username)) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
@@ -119,12 +130,18 @@ static PyObject *PyModule_disconnect(PyObject *self, PyObject *args) {
  *  \param bool toblock. True for block; False for unblock.
  *  \return None
  */
+static const char *kBlockRemoteExclusiveControlKWlist[] = {"block", NULL};
+
 static PyObject *PyModule_BlockRemoteExclusiveControl(PyObject *self,
-                                                      PyObject *args) {
+                                                      PyObject *args,
+                                                      PyObject *keywds) {
   (void)self;
   PyObject *isYesObj = NULL;
 
-  if (!PyArg_ParseTuple(args, "O", &isYesObj)) {
+  if (!PyArg_ParseTupleAndKeywords(args, keywds, "O",
+                                   const_cast<char **>(
+                                       kBlockRemoteExclusiveControlKWlist),
+                                   &isYesObj)) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
@@ -149,13 +166,19 @@ static PyObject *PyModule_BlockRemoteExclusiveControl(PyObject *self,
  * constants.py.
  */
 /**@}*/
+static const char *kUpdateOperationalStatusKWlist[] = {"state", "data", NULL};
+
 static PyObject *PyModule_UpdateOperationalStatus(PyObject *self,
-                                                  PyObject *args) {
+                                                  PyObject *args,
+                                                  PyObject *keywds) {
   (void)self;
   int state;
   char *dataStr = NULL;
 
-  if (!PyArg_ParseTuple(args, "i|s", &state, &dataStr)) {
+  if (!PyArg_ParseTupleAndKeywords(args, keywds, "i|s",
+                                   const_cast<char **>(
+                                       kUpdateOperationalStatusKWlist),
+                                   &state, &dataStr)) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
@@ -188,11 +211,17 @@ static PyObject *PyModule_UpdateOperationalStatus(PyObject *self,
  *  \note Image(s) taken from the robot camera(s) will be saved in <b>{robot
  * home directory}/recordings/cameras</b> directory on the ROBOT_MODEL_DOXYGEN.
  */
-static PyObject *PyModule_TakeCameraSnapshot(PyObject *self, PyObject *args) {
+static const char *kTakeCameraSnapshotKWlist[] = {"take_all", NULL};
+
+static PyObject *PyModule_TakeCameraSnapshot(PyObject *self, PyObject *args,
+                                             PyObject *keywds) {
   (void)self;
   PyObject *takeAllObj = NULL;
 
-  if (!PyArg_ParseTuple(args, "|O", &takeAllObj)) {
+  if (!PyArg_ParseTupleAndKeywords(args, keywds, "|O",
+                                   const_cast<char **>(
+                                       kTakeCameraSnapshotKWlist),
+                                   &takeAllObj)) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
@@ -225,11 +254,17 @@ static PyObject *PyModule_GetMyIPAddress(PyObject *self) {
   }
 }
 
-static PyObject *PyModule_UpdateRobotTelemetry(PyObject *self, PyObject *args) {
+static const char *kUpdateRobotTelemetryKWlist[] = {"x", "y", "theta", NULL};
+
+static PyObject *PyModule_UpdateRobotTelemetry(PyObject *self, PyObject *args,
+                                               PyObject *keywds) {
   (void)self;
   float pos_x, pos_y, pos_theta;
 
-  if (!PyArg_ParseTuple(args, "fff", &pos_x, &pos_y, &pos_theta)) {
+  if (!PyArg_ParseTupleAndKeywords(args, keywds, "fff",
+                                   const_cast<char **>(
+                                       kUpdateRobotTelemetryKWlist),
+                                   &pos_x, &pos_y, &pos_theta)) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
@@ -306,12 +341,17 @@ static PyObject *PyModule_SaveConfiguration(PyObject *self) {
  *  \param str user_password.
  *  \return None.
  */
-static PyObject *PyModule_AddUser(PyObject *self, PyObject *args) {
+static const char *kAddUserKWlist[] = {"name", "password", NULL};
+
+static PyObject *PyModule_AddUser(PyObject *self, PyObject *args,
+                                  PyObject *keywds) {
   (void)self;
   char *nameStr = NULL;
   char *passwordStr = NULL;
 
-  if (!PyArg_ParseTuple(args, "ss", &nameStr, &passwordStr)) {
+  if (!PyArg_ParseTupleAndKeywords(args, keywds, "ss",
+                                   const_cast<char **>(kAddUserKWlist),
+                                   &nameStr, &passwordStr)) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
@@ -332,11 +372,16 @@ static PyObject *PyModule_AddUser(PyObject *self, PyObject *args) {
  *  \param str user_name name.
  *  \return None.
  */
-static PyObject *PyModule_RemoveUser(PyObject *self, PyObject *args) {
+static const char *kRemoveUserKWlist[] = {"name", NULL};
+
+static PyObject *PyModule_RemoveUser(PyObject *self, PyObject *args,
+                                     PyObject *keywds) {
   (void)self;
   char *nameStr = NULL;
 
-  if (!PyArg_ParseTuple(args, "s", &nameStr)) {
+  if (!PyArg_ParseTupleAndKeywords(args, keywds, "s",
+                                   const_cast<char **>(kRemoveUserKWlist),
+                                   &nameStr)) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
@@ -357,14 +402,21 @@ static PyObject *PyModule_RemoveUser(PyObject *self, PyObject *args) {
  *  \return None.
  */
 /**@}*/
-static PyObject *PyModule_ChangeUserPassword(PyObject *self, PyObject *args) {
+static const char *kChangeUserPasswordKWlist[] = {"name", "old_password",
+                                                  "new_password", NULL};
+
+static PyObject *PyModule_ChangeUserPassword(PyObject *self, PyObject *args,
+                                             PyObject *keywds) {
   (void)self;
   char *nameStr = NULL;
   char *newPasswordPtr = NULL;
   char *oldPasswordPtr = NULL;
 
-  if (!PyArg_ParseTuple(args, "sss", &nameStr, &oldPasswordPtr,
-                        &newPasswordPtr)) {
+  if (!PyArg_ParseTupleAndKeywords(args, keywds, "sss",
+                                   const_cast<char **>(
+                                       kChangeUserPasswordKWlist),
+                                   &nameStr, &oldPasswordPtr,
+                                   &newPasswordPtr)) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
@@ -394,13 +446,19 @@ static PyObject *PyModule_ChangeUserPassword(PyObject *self, PyObject *args) {
  * Time interval (in seconds, precision to 10th of a second) between timer
  * callbacks. \return long The ID of the timer object.
  */
-static PyObject *PyModule_AddTimer(PyObject *self, PyObject *args) {
+static const char *kAddTimerKWlist[] = {"initial_time", "repeats",
+                                        "interval", NULL};
+
+static PyObject *PyModule_AddTimer(PyObject *self, PyObject *args,
+                                   PyObject *keywds) {
   (void)self;
   float initTime;
   long repeats = 0;
   float interval = 1.0;
 
-  if (!PyArg_ParseTuple(args, "f|lf", &initTime, &repeats, &interval)) {
+  if (!PyArg_ParseTupleAndKeywords(args, keywds, "f|lf",
+                                   const_cast<char **>(kAddTimerKWlist),
+                                   &initTime, &repeats, &interval)) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
@@ -425,11 +483,16 @@ static PyObject *PyModule_AddTimer(PyObject *self, PyObject *args) {
  *  \param long timer_id. ID of the timer object pending for removal.
  *  \return None.
  */
-static PyObject *PyModule_RemoveTimer(PyObject *self, PyObject *args) {
+static const char *kRemoveTimerKWlist[] = {"timer_id", NULL};
+
+static PyObject *PyModule_RemoveTimer(PyObject *self, PyObject *args,
+                                      PyObject *keywds) {
   (void)self;
   long timerID;
 
-  if (!PyArg_ParseTuple(args, "l", &timerID)) {
+  if (!PyArg_ParseTupleAndKeywords(args, keywds, "l",
+                                   const_cast<char **>(kRemoveTimerKWlist),
+                                   &timerID)) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
@@ -466,11 +529,16 @@ static PyObject *PyModule_RemoveTimer(PyObject *self, PyObject *args) {
  *  \param long timer_id. ID of the timer object.
  *  \return True = timer is alive; False = timer is dead.
  */
-static PyObject *PyModule_IsTimerRunning(PyObject *self, PyObject *args) {
+static const char *kIsTimerRunningKWlist[] = {"timer_id", NULL};
+
+static PyObject *PyModule_IsTimerRunning(PyObject *self, PyObject *args,
+                                         PyObject *keywds) {
   (void)self;
   long timerID;
 
-  if (!PyArg_ParseTuple(args, "l", &timerID)) {
+  if (!PyArg_ParseTupleAndKeywords(args, keywds, "l",
+                                   const_cast<char **>(kIsTimerRunningKWlist),
+                                   &timerID)) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
@@ -494,11 +562,17 @@ static PyObject *PyModule_IsTimerRunning(PyObject *self, PyObject *args) {
  *  \param long timer_id. ID of the timer object.
  *  \return True = timer is executing code; False = timer is in hibernation.
  */
-static PyObject *PyModule_IsTimerExecuting(PyObject *self, PyObject *args) {
+static const char *kIsTimerExecutingKWlist[] = {"timer_id", NULL};
+
+static PyObject *PyModule_IsTimerExecuting(PyObject *self, PyObject *args,
+                                           PyObject *keywds) {
   (void)self;
   long timerID;
 
-  if (!PyArg_ParseTuple(args, "l", &timerID)) {
+  if (!PyArg_ParseTupleAndKeywords(args, keywds, "l",
+                                   const_cast<char **>(
+                                       kIsTimerExecutingKWlist),
+                                   &timerID)) {
     // PyArg_ParseTuple will set the error status.
     return NULL;
   }
