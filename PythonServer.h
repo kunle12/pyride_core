@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <deque>
 #include <errno.h>
+#include <vector>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <string>
@@ -194,6 +195,11 @@ private:
   int historyPos_;
   unsigned int charPos_;
   std::string multiline_;
+
+  std::vector<std::string> tabCompletionList_;
+  int tabCompletionIndex_;
+  std::string tabCompletionSavedLine_;
+  unsigned int tabCompletionSavedPos_;
 
   void connectReady();
 

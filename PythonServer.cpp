@@ -1077,7 +1077,8 @@ void PythonServer::broadcastMessage(
  */
 PythonSession::PythonSession(PythonServer *server, SOCKET_T fd)
     : server_(server), fd_(fd), telnetSubnegotiation_(false),
-      promptStr_(">>> "), historyPos_(-1), charPos_(0), multiline_("") {
+      promptStr_(">>> "), historyPos_(-1), charPos_(0), multiline_(""),
+      tabCompletionIndex_(-1), tabCompletionSavedPos_(0) {
   this->connectReady();
 }
 
@@ -1308,6 +1309,9 @@ void PythonSession::handleChar() {
   charPos_++;
   readBuffer_.pop_front();
 
+  tabCompletionList_.clear();
+  tabCompletionIndex_ = -1;
+
   std::string rest = currentLine_.substr(charPos_);
   this->write(currentLine_.substr(charPos_ - 1).c_str());
   if (!rest.empty()) {
@@ -1324,6 +1328,8 @@ void PythonSession::handleChar() {
  *   This method handles a multi-byte UTF-8 character.
  */
 void PythonSession::handleUTF8Char(int seqLen) {
+  tabCompletionList_.clear();
+  tabCompletionIndex_ = -1;
   std::string utf8Char;
   for (int i = 0; i < seqLen; i++) {
     utf8Char += (char)readBuffer_.front();
@@ -1402,6 +1408,8 @@ void PythonSession::handleLine(PythonServer::ClientItem *client) {
  *  This method handles a del character.
  */
 void PythonSession::handleDel() {
+  tabCompletionList_.clear();
+  tabCompletionIndex_ = -1;
   if (charPos_ > 0) {
     int start = utf8PrevCharPos(currentLine_, charPos_);
     int charLen = charPos_ - start;
@@ -1452,8 +1460,48 @@ void PythonSession::handleTab() {
     if (!lastToken.empty()) {
       std::vector<std::string> mylist;
 
+      // Check if we can cycle through a previous completion list
+      if (!tabCompletionList_.empty() &&
+          currentLine_ == tabCompletionSavedLine_ &&
+          charPos_ == tabCompletionSavedPos_) {
+        // Cycle to the next match
+        tabCompletionIndex_++;
+        if (tabCompletionIndex_ >= (int)tabCompletionList_.size()) {
+          tabCompletionIndex_ = 0;
+        }
+        // Restore saved state and apply the next completion
+        std::string savedLine = tabCompletionSavedLine_;
+        unsigned int savedPos = tabCompletionSavedPos_;
+        std::string curStr;
+        std::size_t dotPos = lastToken.find_last_of(".");
+        if (dotPos == std::string::npos) {
+          curStr = lastToken;
+        } else {
+          curStr = lastToken.substr(dotPos + 1);
+        }
+        currentLine_ = savedLine;
+        charPos_ = savedPos;
+        this->tabCompletion(tabCompletionList_[tabCompletionIndex_], curStr);
+        // Redraw the full line
+        this->write("\r" ERASE_EOL);
+        this->writePrompt();
+        this->write(currentLine_.c_str());
+        {
+          int w = displayWidth(currentLine_.substr(charPos_));
+          char ctrl[32];
+          snprintf(ctrl, sizeof(ctrl), "\033[%dD", w);
+          this->write(ctrl);
+        }
+        return;
+      }
+
       if (server_->getObjectDir(lastToken, mylist)) {
         int lsize = (int)mylist.size();
+        tabCompletionList_.clear();
+        tabCompletionIndex_ = -1;
+        tabCompletionSavedLine_.clear();
+        tabCompletionSavedPos_ = 0;
+
         if (lsize == 1) { // complete the string
           found = lastToken.find_last_of(".");
           if (found == std::string::npos) {
@@ -1461,51 +1509,73 @@ void PythonSession::handleTab() {
           } else {
             this->tabCompletion(mylist[0], lastToken.substr(found + 1));
           }
-        } else { // print all options in a table list
-          int minlen = 500, maxlen = 0;
-          int minidx = -1;
-          (void)minidx;
-          for (int i = 0; i < lsize; i++) {
-            int len = mylist[i].length();
-            if (len > maxlen) {
-              maxlen = len;
-            }
-            if (len < minlen) {
-              minlen = len;
-              minidx = i;
-            }
+        } else { // try longest common prefix completion
+          std::string curStr;
+          found = lastToken.find_last_of(".");
+          if (found == std::string::npos) {
+            curStr = lastToken;
+          } else {
+            curStr = lastToken.substr(found + 1);
           }
-          char output[TERMINAL_SIZE + 1];
-          char *optr = (char *)&output;
-          int spacing = maxlen + 2;
-          int itidx = 0;
-          this->write("\r\n");
+          std::string prefix = mylist[0];
+          for (int i = 1; i < lsize; i++) {
+            int j = 0;
+            while (j < (int)prefix.length() && j < (int)mylist[i].length() &&
+                   prefix[j] == mylist[i][j]) {
+              j++;
+            }
+            prefix = prefix.substr(0, j);
+          }
+          if (prefix.length() > curStr.length()) {
+            this->tabCompletion(prefix, curStr);
+          } else {
+            // Save state for cycling
+            tabCompletionList_ = mylist;
+            tabCompletionIndex_ = -1;
+            tabCompletionSavedLine_ = currentLine_;
+            tabCompletionSavedPos_ = charPos_;
+            // print all options in a table list
+            int maxlen = 0;
+            for (int i = 0; i < lsize; i++) {
+              int len = mylist[i].length();
+              if (len > maxlen) {
+                maxlen = len;
+              }
+            }
+            char output[TERMINAL_SIZE + 1];
+            char *optr = (char *)&output;
+            int spacing = maxlen + 2;
+            int itidx = 0;
+            this->write("\r\n");
 
-          while (itidx < lsize) {
-            sprintf(optr, "%-*s", spacing, mylist[itidx++].c_str());
-            optr += spacing;
-            if ((optr - output) >= (TERMINAL_SIZE - spacing)) {
+            while (itidx < lsize) {
+              sprintf(optr, "%-*s", spacing, mylist[itidx++].c_str());
+              optr += spacing;
+              if ((optr - output) >= (TERMINAL_SIZE - spacing)) {
+                this->write(output);
+                this->write("\r\n");
+                optr = (char *)output;
+              }
+            }
+            if (optr > output) {
               this->write(output);
               this->write("\r\n");
-              optr = (char *)output;
             }
-          }
-          if (optr > output) {
-            this->write(output);
-            this->write("\r\n");
-          }
-          this->writePrompt();
-          this->write(currentLine_.c_str());
-          {
-            int w = displayWidth(currentLine_.substr(charPos_));
-            char ctrl[32];
-            snprintf(ctrl, sizeof(ctrl), "\033[%dD", w);
-            this->write(ctrl);
+            this->writePrompt();
+            this->write(currentLine_.c_str());
+            {
+              int w = displayWidth(currentLine_.substr(charPos_));
+              char ctrl[32];
+              snprintf(ctrl, sizeof(ctrl), "\033[%dD", w);
+              this->write(ctrl);
+            }
           }
         }
       } else { // cause a beep
         char beepStr[] = {KEY_CTRL_G, 0};
         this->write(beepStr);
+        tabCompletionList_.clear();
+        tabCompletionIndex_ = -1;
       }
     }
   } else {
@@ -1521,6 +1591,8 @@ void PythonSession::handleTab() {
     }
 
     charPos_ += 2;
+    tabCompletionList_.clear();
+    tabCompletionIndex_ = -1;
   }
 }
 
