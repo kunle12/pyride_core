@@ -200,6 +200,7 @@ private:
   int tabCompletionIndex_;
   std::string tabCompletionSavedLine_;
   unsigned int tabCompletionSavedPos_;
+  bool tabCompletionActive_;
 
   void connectReady();
 

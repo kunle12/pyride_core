@@ -1078,7 +1078,8 @@ void PythonServer::broadcastMessage(
 PythonSession::PythonSession(PythonServer *server, SOCKET_T fd)
     : server_(server), fd_(fd), telnetSubnegotiation_(false),
       promptStr_(">>> "), historyPos_(-1), charPos_(0), multiline_(""),
-      tabCompletionIndex_(-1), tabCompletionSavedPos_(0) {
+      tabCompletionIndex_(-1), tabCompletionSavedPos_(0),
+      tabCompletionActive_(false) {
   this->connectReady();
 }
 
@@ -1311,6 +1312,7 @@ void PythonSession::handleChar() {
 
   tabCompletionList_.clear();
   tabCompletionIndex_ = -1;
+  tabCompletionActive_ = false;
 
   std::string rest = currentLine_.substr(charPos_);
   this->write(currentLine_.substr(charPos_ - 1).c_str());
@@ -1330,6 +1332,7 @@ void PythonSession::handleChar() {
 void PythonSession::handleUTF8Char(int seqLen) {
   tabCompletionList_.clear();
   tabCompletionIndex_ = -1;
+  tabCompletionActive_ = false;
   std::string utf8Char;
   for (int i = 0; i < seqLen; i++) {
     utf8Char += (char)readBuffer_.front();
@@ -1410,6 +1413,7 @@ void PythonSession::handleLine(PythonServer::ClientItem *client) {
 void PythonSession::handleDel() {
   tabCompletionList_.clear();
   tabCompletionIndex_ = -1;
+  tabCompletionActive_ = false;
   if (charPos_ > 0) {
     int start = utf8PrevCharPos(currentLine_, charPos_);
     int charLen = charPos_ - start;
@@ -1461,9 +1465,7 @@ void PythonSession::handleTab() {
       std::vector<std::string> mylist;
 
       // Check if we can cycle through a previous completion list
-      if (!tabCompletionList_.empty() &&
-          currentLine_ == tabCompletionSavedLine_ &&
-          charPos_ == tabCompletionSavedPos_) {
+      if (tabCompletionActive_) {
         // Cycle to the next match
         tabCompletionIndex_++;
         if (tabCompletionIndex_ >= (int)tabCompletionList_.size()) {
@@ -1499,6 +1501,7 @@ void PythonSession::handleTab() {
         int lsize = (int)mylist.size();
         tabCompletionList_.clear();
         tabCompletionIndex_ = -1;
+        tabCompletionActive_ = false;
         tabCompletionSavedLine_.clear();
         tabCompletionSavedPos_ = 0;
 
@@ -1534,6 +1537,7 @@ void PythonSession::handleTab() {
             tabCompletionIndex_ = -1;
             tabCompletionSavedLine_ = currentLine_;
             tabCompletionSavedPos_ = charPos_;
+            tabCompletionActive_ = true;
             // print all options in a table list
             int maxlen = 0;
             for (int i = 0; i < lsize; i++) {
@@ -1576,6 +1580,7 @@ void PythonSession::handleTab() {
         this->write(beepStr);
         tabCompletionList_.clear();
         tabCompletionIndex_ = -1;
+        tabCompletionActive_ = false;
       }
     }
   } else {
@@ -1593,6 +1598,7 @@ void PythonSession::handleTab() {
     charPos_ += 2;
     tabCompletionList_.clear();
     tabCompletionIndex_ = -1;
+    tabCompletionActive_ = false;
   }
 }
 
