@@ -973,13 +973,15 @@ bool PythonServer::getObjectDir(const std::string &searchStr,
     found = targetStr.find_first_of(".");
     if (found == std::string::npos) {
       // search the current object for attr/meth/obj match to the search string
+      PyErr_Clear();
       PyObject *metdList = PyObject_Dir(searchingObj);
       if (metdList && (listSize = PyList_Size(metdList)) > 0) {
         for (size_t i = 0; i < listSize; i++) {
 #if PY_MAJOR_VERSION >= 3
           PyObject *unicodeobj =
               PyUnicode_FromObject(PyList_GetItem(metdList, i));
-          std::string methodStr(PyUnicode_AsUTF8(unicodeobj));
+          const char *utf8str = PyUnicode_AsUTF8(unicodeobj);
+          std::string methodStr(utf8str ? utf8str : "");
           Py_DECREF(unicodeobj);
 #else
           std::string methodStr(PyString_AsString(PyList_GetItem(metdList, i)));
@@ -999,13 +1001,15 @@ bool PythonServer::getObjectDir(const std::string &searchStr,
         Py_DECREF(searchingObj);
         searchingObj = modObj;
         if (targetStr.empty()) { // special case give full list of options
+          PyErr_Clear();
           PyObject *metdList = PyObject_Dir(searchingObj);
           if (metdList && (listSize = PyList_Size(metdList)) > 0) {
             for (size_t i = 0; i < listSize; i++) {
 #if PY_MAJOR_VERSION >= 3
               PyObject *unicodeobj =
                   PyUnicode_FromObject(PyList_GetItem(metdList, i));
-              std::string methodStr(PyUnicode_AsUTF8(unicodeobj));
+              const char *utf8str = PyUnicode_AsUTF8(unicodeobj);
+              std::string methodStr(utf8str ? utf8str : "");
               Py_DECREF(unicodeobj);
 #else
               std::string methodStr(
@@ -1470,16 +1474,29 @@ void PythonSession::handleTab() {
         tabCompletionIndex_++;
         if (tabCompletionIndex_ >= (int)tabCompletionList_.size()) {
           tabCompletionIndex_ = 0;
+          // Beep to indicate wrap-around
+          char beepStr[] = {KEY_CTRL_G, 0};
+          this->write(beepStr);
         }
         // Restore saved state and apply the next completion
         std::string savedLine = tabCompletionSavedLine_;
         unsigned int savedPos = tabCompletionSavedPos_;
-        std::string curStr;
-        std::size_t dotPos = lastToken.find_last_of(".");
-        if (dotPos == std::string::npos) {
-          curStr = lastToken;
+        // Extract curStr from the saved line, not from currentLine_ (which
+        // may already contain a previous cycle's completion)
+        std::string savedSubline = savedLine.substr(0, savedPos);
+        std::string savedToken;
+        std::size_t savedFound = savedSubline.find_last_of(" ([=|&*+/;\t");
+        if (savedFound == std::string::npos) {
+          savedToken = savedSubline;
         } else {
-          curStr = lastToken.substr(dotPos + 1);
+          savedToken = savedSubline.substr(savedFound + 1);
+        }
+        std::string curStr;
+        std::size_t dotPos = savedToken.find_last_of(".");
+        if (dotPos == std::string::npos) {
+          curStr = savedToken;
+        } else {
+          curStr = savedToken.substr(dotPos + 1);
         }
         currentLine_ = savedLine;
         charPos_ = savedPos;
@@ -1490,9 +1507,11 @@ void PythonSession::handleTab() {
         this->write(currentLine_.c_str());
         {
           int w = displayWidth(currentLine_.substr(charPos_));
-          char ctrl[32];
-          snprintf(ctrl, sizeof(ctrl), "\033[%dD", w);
-          this->write(ctrl);
+          if (w > 0) {
+            char ctrl[32];
+            snprintf(ctrl, sizeof(ctrl), "\033[%dD", w);
+            this->write(ctrl);
+          }
         }
         return;
       }
@@ -1546,32 +1565,35 @@ void PythonSession::handleTab() {
                 maxlen = len;
               }
             }
-            char output[TERMINAL_SIZE + 1];
-            char *optr = (char *)&output;
             int spacing = maxlen + 2;
+            std::string output;
             int itidx = 0;
             this->write("\r\n");
 
             while (itidx < lsize) {
-              sprintf(optr, "%-*s", spacing, mylist[itidx++].c_str());
-              optr += spacing;
-              if ((optr - output) >= (TERMINAL_SIZE - spacing)) {
-                this->write(output);
+              char buf[256];
+              snprintf(buf, sizeof(buf), "%-*s", spacing,
+                       mylist[itidx++].c_str());
+              output += buf;
+              if (output.length() >= (size_t)(TERMINAL_SIZE - spacing)) {
+                this->write(output.c_str());
                 this->write("\r\n");
-                optr = (char *)output;
+                output.clear();
               }
             }
-            if (optr > output) {
-              this->write(output);
+            if (!output.empty()) {
+              this->write(output.c_str());
               this->write("\r\n");
             }
             this->writePrompt();
             this->write(currentLine_.c_str());
             {
               int w = displayWidth(currentLine_.substr(charPos_));
-              char ctrl[32];
-              snprintf(ctrl, sizeof(ctrl), "\033[%dD", w);
-              this->write(ctrl);
+              if (w > 0) {
+                char ctrl[32];
+                snprintf(ctrl, sizeof(ctrl), "\033[%dD", w);
+                this->write(ctrl);
+              }
             }
           }
         }
@@ -1590,9 +1612,11 @@ void PythonSession::handleTab() {
 
     {
       int w = displayWidth(currentLine_.substr(charPos_ + 2));
-      char ctrl[32];
-      snprintf(ctrl, sizeof(ctrl), "\033[%dD", w);
-      this->write(ctrl);
+      if (w > 0) {
+        char ctrl[32];
+        snprintf(ctrl, sizeof(ctrl), "\033[%dD", w);
+        this->write(ctrl);
+      }
     }
 
     charPos_ += 2;
@@ -1606,6 +1630,9 @@ void PythonSession::handleTab() {
  *   This method handles a key up event.
  */
 void PythonSession::handleUp() {
+  tabCompletionList_.clear();
+  tabCompletionIndex_ = -1;
+  tabCompletionActive_ = false;
   if (historyPos_ < (int)historyBuffer_.size() - 1) {
     historyPos_++;
     currentLine_ = historyBuffer_[historyBuffer_.size() - historyPos_ - 1];
@@ -1621,6 +1648,9 @@ void PythonSession::handleUp() {
  *   This method handles a key down event.
  */
 void PythonSession::handleDown() {
+  tabCompletionList_.clear();
+  tabCompletionIndex_ = -1;
+  tabCompletionActive_ = false;
   if (historyPos_ >= 0) {
     historyPos_--;
 
@@ -1704,6 +1734,12 @@ void PythonSession::handleEnd() {
 
 void PythonSession::tabCompletion(const std::string &fullStr,
                                   const std::string &curStr, bool fullprint) {
+  if (fullStr.length() < curStr.length()) {
+    // curStr longer than fullStr is invalid; beep and bail out
+    char beepStr[] = {KEY_CTRL_G, 0};
+    this->write(beepStr);
+    return;
+  }
   int rlen = fullStr.length() - curStr.length();
 
   currentLine_.insert(charPos_, fullStr, curStr.length(), rlen);
