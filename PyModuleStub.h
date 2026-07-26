@@ -52,6 +52,7 @@ public:
   void fini();
   char clientID() const { return clientID_; }
   void clientID(char cID);
+  void setModuleBoolAttr(const char *name, bool value);
 
 protected:
   char clientID_;

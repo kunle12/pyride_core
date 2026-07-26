@@ -74,6 +74,7 @@ public:
   void write(const char *msg);
   void broadcastMessage(const char *mesg);
   bool isActive() { return isActive_; }
+  bool isTelnetConsoleRunning() const { return runningTelnetConsole_; }
 
   PyObject *mainScript() { return pMainScript_; }
 

@@ -56,6 +56,15 @@ PyObject *PyModuleExtension::init(PyOutputWriter *pow) {
   return pPyModule_;
 }
 
+void PyModuleExtension::setModuleBoolAttr(const char *name, bool value) {
+  if (!pPyModule_)
+    return;
+  PyObject *arg = value ? Py_True : Py_False;
+  Py_INCREF(arg);
+  PyObject_SetAttrString(pPyModule_, name, arg);
+  Py_DECREF(arg);
+}
+
 void PyModuleExtension::fini() {
   if (pPyModule_) {
     for (size_t i = 0; i < g_PyModuleTimerList.size(); i++) {
