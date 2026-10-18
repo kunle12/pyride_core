@@ -59,10 +59,14 @@ PyObject *PyModuleExtension::init(PyOutputWriter *pow) {
 void PyModuleExtension::setModuleBoolAttr(const char *name, bool value) {
   if (!pPyModule_)
     return;
+  // PythonServer::init() releases the GIL before returning, so the caller may
+  // not hold it. PyGILState_Ensure is safe when the GIL is already held.
+  PyGILState_STATE gstate = PyGILState_Ensure();
   PyObject *arg = value ? Py_True : Py_False;
   Py_INCREF(arg);
   PyObject_SetAttrString(pPyModule_, name, arg);
   Py_DECREF(arg);
+  PyGILState_Release(gstate);
 }
 
 void PyModuleExtension::fini() {
