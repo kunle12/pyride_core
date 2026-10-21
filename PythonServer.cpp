@@ -64,6 +64,22 @@ static int displayWidth(const std::string &s) {
 
 static const char goodByeMsg[] = "\r\nGoodbye from PyRIDE Python Console.\r\n";
 
+// Bounded string copy that always NUL-terminates. Unlike
+// strncpy(dst, src, sizeof(dst)) it cannot leave dst unterminated when src is
+// too long (and does not trigger -Wstringop-truncation).
+static void copyPath(char *dst, size_t dstSize, const char *src) {
+  if (!dst || dstSize == 0) {
+    return;
+  }
+  if (!src) {
+    dst[0] = '\0';
+    return;
+  }
+  const size_t len = strnlen(src, dstSize - 1);
+  memcpy(dst, src, len);
+  dst[len] = '\0';
+}
+
 PythonServer *PythonServer::s_pPythonServer = NULL;
 
 void *pytelnet_thread(void *processor) {
@@ -105,10 +121,10 @@ void PythonServer::init(bool enableTelnetConsole, PyModuleExtension *pyModule,
   pyModuleExtension_ = pyModule;
 
   if (scriptDir) {
-    strncpy(customScriptBase, scriptDir, 256);
+    copyPath(customScriptBase, sizeof(customScriptBase), scriptDir);
   }
   if (pythonHome) {
-    strncpy(customPythonHome, pythonHome, 256);
+    copyPath(customPythonHome, sizeof(customPythonHome), pythonHome);
   }
 
   if (!initPyInterpreter()) {
@@ -259,7 +275,8 @@ bool PythonServer::initPyInterpreter() {
   }
   INFO_MSG("use script path %s.\n", scriptPath);
 
-  PyGILState_STATE gstate;
+  PyGILState_STATE gstate = PyGILState_UNLOCKED;
+  bool acquiredGIL = false;
   // initialise Python interpreter
   if (Py_IsInitialized()) {
     INFO_MSG("Python interpreter is already in use, restartpython() is not "
@@ -267,6 +284,7 @@ bool PythonServer::initPyInterpreter() {
     hasInterpreter_ = true;
     // we are not the thread starting the python
     gstate = PyGILState_Ensure();
+    acquiredGIL = true;
   } else {
 #if PY_MAJOR_VERSION >= 3
 #if PY_MINOR_VERSION > 13
@@ -433,7 +451,7 @@ bool PythonServer::initPyInterpreter() {
 
   initModuleExtension();
 
-  if (hasInterpreter_) {
+  if (acquiredGIL) {
     PyGILState_Release(gstate);
   } else {
     PyEval_SaveThread(); // release the GIL lock so that other threads can
