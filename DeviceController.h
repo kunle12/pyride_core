@@ -13,6 +13,7 @@
 #ifdef __cplusplus
 
 #include <ccrtp/rtp.h>
+#include <atomic>
 #include <string>
 #include <vector>
 #ifdef OLD_NAO
@@ -61,7 +62,9 @@ public:
 
 protected:
   bool isInitialised_;
-  bool isStreaming_;
+  // Written by the control/network path (start/stop) and read by the snapshot
+  // path, which can run on the Python interpreter thread.
+  std::atomic<bool> isStreaming_;
   int clientNo_;
   long packetStamp_;
 
@@ -155,8 +158,13 @@ protected:
                   ImageFormat format);
 
   void setProcessParameters();
+  // Reconfigure the JPEG encoder for the dimensions of the frames actually
+  // arriving from the camera source. No-op when the size is unchanged.
+  void setImageSize(int width, int height);
 
 private:
+  void configureImageProcessing();
+
   unsigned char *outBuffer_;
   int outBufferSize_;
 

@@ -326,6 +326,25 @@ void VideoDevice::setProcessParameters() {
     imageSize_ = imageWidth_ * imageHeight_;
   }
 
+  this->configureImageProcessing();
+}
+
+void VideoDevice::setImageSize(int width, int height) {
+  if (width <= 0 || height <= 0)
+    return;
+  if (width == imageWidth_ && height == imageHeight_)
+    return;
+
+  imageWidth_ = width;
+  imageHeight_ = height;
+  imageSize_ = width * height;
+
+  this->configureImageProcessing();
+
+  INFO_MSG("Video frame size is now %dx%d.\n", width, height);
+}
+
+void VideoDevice::configureImageProcessing() {
   if (outBuffer_) { // initialised before
     delete[] outBuffer_;
     outBuffer_ = NULL;
@@ -372,17 +391,27 @@ bool VideoDevice::start(struct sockaddr_in &cAddr, unsigned short cDataPort) {
     retVal = true;
   }
 
+  // No destination, nothing to stream to. Do not start the camera.
+  if (!retVal)
+    return false;
+
   if (isStreaming_)
-    return retVal;
+    return true;
 
   isStreaming_ = true;
 
   if (!this->initWorkerThread()) {
     isStreaming_ = false;
-    return isStreaming_;
+    // Roll back the destination added above: a failed image subscription must
+    // not leave a phantom RTP client (and a duplicate destination on retry).
+    if (streamSession_->forgetDestination(InetHostAddress(cAddr.sin_addr),
+                                          cDataPort)) {
+      clientNo_--;
+    }
+    return false;
   }
 
-  return retVal;
+  return true;
 }
 
 bool VideoDevice::stop(struct sockaddr_in &cAddr, unsigned short cDataPort) {
