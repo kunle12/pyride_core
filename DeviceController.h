@@ -14,7 +14,10 @@
 
 #include <ccrtp/rtp.h>
 #include <atomic>
+#include <cstdint>
+#include <set>
 #include <string>
+#include <utility>
 #include <vector>
 #ifdef OLD_NAO
 #include <opus.h>
@@ -161,6 +164,10 @@ protected:
   // Reconfigure the JPEG encoder for the dimensions of the frames actually
   // arriving from the camera source. No-op when the size is unchanged.
   void setImageSize(int width, int height);
+  // Override the JPEG quality (1-100) used for RTP frames. 0 is ignored.
+  void setJpegQuality(int quality);
+  // Clear the registered RTP destinations (device init/teardown).
+  void resetDestinations();
 
 private:
   void configureImageProcessing();
@@ -178,6 +185,13 @@ private:
   int imageWidth_;
   int imageHeight_;
   int imageSize_;
+  int jpegQuality_;
+
+  // RTP destinations currently registered for this video device. Tracking
+  // them here makes start/stop idempotent: a console restart that re-issues
+  // the same host:port must not create a duplicate destination (and thereby
+  // leave the image subscription alive after the first stop).
+  std::set<std::pair<uint32_t, uint16_t>> destinations_;
 
   bool YUV422ToRGB24(unsigned char *dstData, int dstDataSize,
                      const unsigned char *srcData, const int srcDataSize);

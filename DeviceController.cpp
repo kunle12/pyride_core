@@ -280,7 +280,8 @@ VideoDevice::VideoDevice()
 #ifndef JPEG62
       jpegMemBuffer_(NULL), jpegMemBufferSize_(0),
 #endif
-      imageWidth_(320), imageHeight_(240), imageSize_(320 * 240) {
+      imageWidth_(320), imageHeight_(240), imageSize_(320 * 240),
+      jpegQuality_(70) {
   vSettings_.fps = 5;
   vSettings_.format = RGB;
   vSettings_.resolution = 1; // 320x240
@@ -324,9 +325,30 @@ void VideoDevice::setProcessParameters() {
     imageWidth_ = kSupportedCameraQuality[(int)vSettings_.resolution].width;
     imageHeight_ = kSupportedCameraQuality[(int)vSettings_.resolution].height;
     imageSize_ = imageWidth_ * imageHeight_;
+    if (vSettings_.resolution < 3) {
+      jpegQuality_ = kCompressionRate[static_cast<int>(vSettings_.resolution)];
+    }
   }
 
   this->configureImageProcessing();
+}
+
+void VideoDevice::setJpegQuality(int quality) {
+  if (quality <= 0) {
+    return;
+  }
+  if (quality > 100) {
+    quality = 100;
+  }
+  jpegQuality_ = quality;
+  if (outBuffer_) {
+    jpeg_set_quality(&cinfo_, jpegQuality_, TRUE);
+  }
+}
+
+void VideoDevice::resetDestinations() {
+  destinations_.clear();
+  clientNo_ = 0;
 }
 
 void VideoDevice::setImageSize(int width, int height) {
@@ -375,25 +397,30 @@ void VideoDevice::configureImageProcessing() {
   cinfo_.input_components = 3;
   cinfo_.in_color_space = JCS_RGB;
   jpeg_set_defaults(&cinfo_);
-  jpeg_set_quality(
-      &cinfo_, kCompressionRate[static_cast<int>(vSettings_.resolution)], TRUE);
+  jpeg_set_quality(&cinfo_, jpegQuality_, TRUE);
 }
 
 bool VideoDevice::start(struct sockaddr_in &cAddr, unsigned short cDataPort) {
-  bool retVal = false;
-
   if (!isInitialised_)
-    return retVal;
+    return false;
 
-  if (streamSession_->addDestination(InetHostAddress(cAddr.sin_addr),
-                                     cDataPort)) {
-    clientNo_++;
-    retVal = true;
+  const auto key = std::make_pair(
+      static_cast<uint32_t>(cAddr.sin_addr.s_addr),
+      static_cast<uint16_t>(cDataPort));
+
+  // A console restart often re-issues start for the same host:port. Do not
+  // register a duplicate destination: duplicate entries keep clientNo_ > 1,
+  // so the first stop cannot tear the image subscription down.
+  if (destinations_.find(key) != destinations_.end()) {
+    return true;
   }
 
-  // No destination, nothing to stream to. Do not start the camera.
-  if (!retVal)
+  if (!streamSession_->addDestination(InetHostAddress(cAddr.sin_addr),
+                                      cDataPort)) {
     return false;
+  }
+  destinations_.insert(key);
+  clientNo_ = static_cast<int>(destinations_.size());
 
   if (isStreaming_)
     return true;
@@ -401,13 +428,17 @@ bool VideoDevice::start(struct sockaddr_in &cAddr, unsigned short cDataPort) {
   isStreaming_ = true;
 
   if (!this->initWorkerThread()) {
-    isStreaming_ = false;
     // Roll back the destination added above: a failed image subscription must
     // not leave a phantom RTP client (and a duplicate destination on retry).
     if (streamSession_->forgetDestination(InetHostAddress(cAddr.sin_addr),
                                           cDataPort)) {
-      clientNo_--;
+      destinations_.erase(key);
+    } else {
+      // The destination is still registered in ccRTP; keep the state in sync
+      // so a later stop can retry forgetDestination().
+      isStreaming_ = true;
     }
+    clientNo_ = static_cast<int>(destinations_.size());
     return false;
   }
 
@@ -415,23 +446,42 @@ bool VideoDevice::start(struct sockaddr_in &cAddr, unsigned short cDataPort) {
 }
 
 bool VideoDevice::stop(struct sockaddr_in &cAddr, unsigned short cDataPort) {
-  bool retVal = false;
+  if (!isInitialised_)
+    return false;
 
-  if (!isInitialised_ || !isStreaming_)
-    return retVal;
+  const auto key = std::make_pair(
+      static_cast<uint32_t>(cAddr.sin_addr.s_addr),
+      static_cast<uint16_t>(cDataPort));
 
-  if (streamSession_->forgetDestination(InetHostAddress(cAddr.sin_addr),
-                                        cDataPort)) {
-    clientNo_--;
-    retVal = true;
+  // Idempotent stop. This is also the defensive cleanup path: if a previous
+  // start left a subscription behind while isStreaming_ was cleared, remove
+  // it now rather than leaving a DDS reader alive.
+  if (!isStreaming_ || destinations_.empty()) {
+    destinations_.clear();
+    clientNo_ = 0;
+    isStreaming_ = false;
+    this->finiWorkerThread();
+    return true;
   }
 
-  isStreaming_ = (clientNo_ > 0);
+  auto it = destinations_.find(key);
+  if (it == destinations_.end()) {
+    // Not one of this device's destinations; do not tear down other clients.
+    return false;
+  }
 
+  if (!streamSession_->forgetDestination(InetHostAddress(cAddr.sin_addr),
+                                         cDataPort)) {
+    return false;
+  }
+
+  destinations_.erase(it);
+  clientNo_ = static_cast<int>(destinations_.size());
+  isStreaming_ = !destinations_.empty();
   if (!isStreaming_) {
     this->finiWorkerThread();
   }
-  return retVal;
+  return true;
 }
 
 void VideoDevice::getVideoSettings(VideoSettings &settings) {

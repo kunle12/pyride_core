@@ -255,12 +255,7 @@ bool ServerDataProcessor::dispatchVideoDataTo(int vidObjID,
     return false;
   }
   VideoDevice *device = activeVideoObjs_->at(vidObjID);
-  if (todispath) {
-    device->start(cAddr, port);
-  } else {
-    device->stop(cAddr, port);
-  }
-  return true;
+  return todispath ? device->start(cAddr, port) : device->stop(cAddr, port);
 }
 
 bool ServerDataProcessor::dispatchAudioDataTo(struct sockaddr_in &cAddr,
