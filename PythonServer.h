@@ -2,6 +2,7 @@
 #define PythonServer_h_DEFINED
 
 #include <arpa/inet.h>
+#include <atomic>
 #include <deque>
 #include <errno.h>
 #include <vector>
@@ -128,7 +129,8 @@ private:
   fd_set masterFDSet_;
 
   bool runningTelnetConsole_;
-  bool keepRunning_;
+  bool threadStarted_;
+  std::atomic<bool> keepRunning_;
 
   PythonSession *activeSession_;
   PyModuleExtension *pyModuleExtension_;
@@ -142,7 +144,7 @@ private:
 
   bool initPyInterpreter();
   void runMainScript();
-  void finiPyInterpreter();
+  void finiPyInterpreter(bool finalize_python = true);
   void initModuleExtension();
   void finiModuleExtension();
 

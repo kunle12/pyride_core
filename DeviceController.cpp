@@ -312,7 +312,7 @@ VideoDevice::~VideoDevice() {
   jpeg_databuffer_free(&cinfo_);
 #else
   if (jpegMemBuffer_) {
-    delete[] jpegMemBuffer_;
+    free(jpegMemBuffer_);
     jpegMemBuffer_ = NULL;
     jpegMemBufferSize_ = 0;
   }
@@ -374,7 +374,7 @@ void VideoDevice::configureImageProcessing() {
 #ifdef JPEG62
     jpeg_databuffer_free(&cinfo_);
 #else
-    delete[] jpegMemBuffer_;
+    free(jpegMemBuffer_);
     jpegMemBuffer_ = NULL;
     jpegMemBufferSize_ = 0;
 #endif
@@ -388,8 +388,14 @@ void VideoDevice::configureImageProcessing() {
 #ifdef JPEG62
   jpeg_databuffer_dest(&cinfo_);
 #else
+  // libjpeg may realloc this buffer, so it must use malloc/free ownership,
+  // not new[]/delete[].
   jpegMemBufferSize_ = imageWidth_ * imageHeight_ * 3 * 2;
-  jpegMemBuffer_ = new unsigned char[jpegMemBufferSize_];
+  jpegMemBuffer_ =
+      static_cast<unsigned char *>(malloc(jpegMemBufferSize_));
+  if (!jpegMemBuffer_) {
+    jpegMemBufferSize_ = 0;
+  }
 #endif
 
   cinfo_.image_width = imageWidth_;
@@ -761,28 +767,30 @@ bool AudioDevice::setProcessParameters() {
 }
 
 bool AudioDevice::start(struct sockaddr_in &cAddr, unsigned short cDataPort) {
-  bool retVal = false;
-
   if (!isInitialised_)
-    return retVal;
+    return false;
 
-  if (streamSession_->addDestination(InetHostAddress(cAddr.sin_addr),
-                                     cDataPort)) {
-    clientNo_++;
-    retVal = true;
-  }
-
+  // A second client for an already-streaming device is a successful no-op.
   if (isStreaming_)
-    return retVal;
+    return true;
 
+  if (!streamSession_->addDestination(InetHostAddress(cAddr.sin_addr),
+                                     cDataPort))
+    return false;
+
+  clientNo_ = 1;
   isStreaming_ = true;
 
   if (!this->initWorkerThread()) {
+    // Roll back the destination added above; otherwise a failed subscriber
+    // leaves a phantom RTP client and a duplicate destination on retry.
+    streamSession_->forgetDestination(InetHostAddress(cAddr.sin_addr), cDataPort);
+    clientNo_ = 0;
     isStreaming_ = false;
-    return isStreaming_;
+    return false;
   }
 
-  return retVal;
+  return true;
 }
 
 bool AudioDevice::stop(struct sockaddr_in &cAddr, unsigned short cDataPort) {

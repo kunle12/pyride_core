@@ -100,8 +100,9 @@ PythonServer::PythonServer()
       pMainModule_(NULL), pMainScript_(NULL), pPyMod_(NULL),
       udpSocket_(INVALID_SOCKET), tcpSocket_(INVALID_SOCKET),
       dgramBuffer_(NULL), clientDataBuffer_(NULL), clientList_(NULL),
-      maxFD_(INVALID_SOCKET), runningTelnetConsole_(false), keepRunning_(false),
-      activeSession_(NULL), pyModuleExtension_(NULL) {
+      maxFD_(INVALID_SOCKET), runningTelnetConsole_(false),
+      threadStarted_(false), keepRunning_(false), activeSession_(NULL),
+      pyModuleExtension_(NULL) {
   customPythonHome[0] = '\0';
   customScriptBase[0] = '\0';
 
@@ -149,28 +150,38 @@ void PythonServer::init(bool enableTelnetConsole, PyModuleExtension *pyModule,
     ERROR_MSG("Unable to create thread to pull telnet inputs.\n");
     return;
   }
+  threadStarted_ = true;
 
   runMainScript();
   isActive_ = true;
 }
 
 void PythonServer::fini() {
-  finiTelnetConsole();
-
   keepRunning_ = false;
 
-  pthread_join(runThread_, NULL); // allow thread to exit
+  if (threadStarted_) {
+    pthread_join(runThread_, NULL); // select() has a short timeout
+    threadStarted_ = false;
+  }
 
-  if (dgramBuffer_) {
+  finiTelnetConsole();
+
+  if (udpSocket_ != INVALID_SOCKET) {
     close(udpSocket_);
     udpSocket_ = INVALID_SOCKET;
+  }
+  if (dgramBuffer_) {
     delete[] dgramBuffer_;
     dgramBuffer_ = NULL;
   }
   maxFD_ = 0;
   FD_ZERO(&masterFDSet_);
 
-  finiPyInterpreter();
+  // The ROS shutdown callback may run on a different thread than the one that
+  // initialised Python.  Py_Finalize() must not be called from an arbitrary
+  // thread; the process exit reclaims the interpreter.  Keep the explicit
+  // finalize path for restartPythonServer().
+  finiPyInterpreter(false);
 }
 
 void PythonServer::initIPAddresses() {
@@ -465,8 +476,12 @@ bool PythonServer::initPyInterpreter() {
   return true;
 }
 
-void PythonServer::finiPyInterpreter() {
+void PythonServer::finiPyInterpreter(bool finalize_python) {
   isActive_ = false;
+  if (!Py_IsInitialized()) {
+    return;
+  }
+
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
 
@@ -485,9 +500,10 @@ void PythonServer::finiPyInterpreter() {
     pMainModule_ = NULL;
   }
   PyErr_Clear();
-  (void)gstate;
-  if (!hasInterpreter_) {
+  if (finalize_python && !hasInterpreter_) {
     Py_Finalize();
+  } else {
+    PyGILState_Release(gstate);
   }
 }
 
@@ -606,6 +622,7 @@ void PythonServer::finiTelnetConsole() {
   close(tcpSocket_);
   tcpSocket_ = INVALID_SOCKET;
 
+  PyGILState_STATE gstate = PyGILState_Ensure();
   if (prevStderr_) {
     PyObject_SetAttrString(pSysModule_, "stderr", prevStderr_);
     Py_DECREF(prevStderr_);
@@ -617,6 +634,7 @@ void PythonServer::finiTelnetConsole() {
     Py_DECREF(prevStdout_);
     prevStdout_ = NULL;
   }
+  PyGILState_Release(gstate);
 
   if (clientDataBuffer_) {
     delete[] clientDataBuffer_;
@@ -751,9 +769,20 @@ void PythonServer::continuousProcessing() {
     memcpy(&readyFDSet, &masterFDSet_, sizeof(masterFDSet_));
     maxFD = maxFD_;
 
-    select(maxFD + 1, &readyFDSet, NULL, NULL, NULL);
-
-    this->processIncomingData(&readyFDSet);
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 250000;
+    const int ready = select(maxFD + 1, &readyFDSet, NULL, NULL, &timeout);
+    if (ready < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
+      ERROR_MSG("PythonServer::continuousProcessing: select failed.\n");
+      break;
+    }
+    if (ready > 0) {
+      this->processIncomingData(&readyFDSet);
+    }
   }
 }
 

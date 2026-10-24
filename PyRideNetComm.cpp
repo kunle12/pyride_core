@@ -2041,21 +2041,32 @@ void PyRideNetComm::delTimer(long tID) {
   while (timerPtr) {
     if (timerPtr->tID == tID) {
       if (timerPtr->isExecuting) {
-        // Timer callback is currently running; mark for deferred deletion
+        // The callback owns the final delete (processTimer()).  Unlink now so
+        // checkTimers()/delTimer() can never dereference a freed node.
         timerPtr->pendingDelete = true;
-      } else {
         if (timerPtr == timerList_) {
           timerList_ = timerPtr->pNext;
           prevTimerPtr = timerList_;
-          delete timerPtr;
           timerPtr = timerList_;
         } else {
           prevTimerPtr->pNext = timerPtr->pNext;
-          delete timerPtr;
           timerPtr = prevTimerPtr->pNext;
         }
         timerCount_--;
+        continue;
       }
+
+      if (timerPtr == timerList_) {
+        timerList_ = timerPtr->pNext;
+        prevTimerPtr = timerList_;
+        delete timerPtr;
+        timerPtr = timerList_;
+      } else {
+        prevTimerPtr->pNext = timerPtr->pNext;
+        delete timerPtr;
+        timerPtr = prevTimerPtr->pNext;
+      }
+      timerCount_--;
     } else {
       prevTimerPtr = timerPtr;
       timerPtr = timerPtr->pNext;
