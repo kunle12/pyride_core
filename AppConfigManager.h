@@ -71,7 +71,7 @@ public:
   void fini();
 
   char clientID() { return clientID_; }
-  bool enablePythonConsole() { return allowPythonTelnet_; }
+  bool devMode() const { return devMode_; }
   const RobotPose &startPosition() { return defaultPose_; }
 
 private:
@@ -83,7 +83,7 @@ private:
   DeviceInfoList deviceInfoList_;
 
   char clientID_;
-  bool allowPythonTelnet_;
+  bool devMode_;
   RobotPose defaultPose_;
 
   std::string configFileName_;

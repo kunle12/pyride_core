@@ -134,10 +134,14 @@ void PythonServer::init(bool enableTelnetConsole, PyModuleExtension *pyModule,
 
   FD_ZERO(&masterFDSet_);
 
-  initUDPListener();
+  if (!initUDPListener()) {
+    ERROR_MSG("PythonServer: UDP message listener is unavailable.\n");
+  }
 
-  if (enableTelnetConsole)
-    initTelnetConsole();
+  if (enableTelnetConsole && !initTelnetConsole()) {
+    ERROR_MSG("PythonServer: developer console could not be started; "
+              "behaviour dispatch remains governed by DevMode.\n");
+  }
 
   keepRunning_ = true;
 
@@ -542,13 +546,21 @@ bool PythonServer::initTelnetConsole() {
     ERROR_MSG("PythonServer::initTCPListener: failed to enable reuse addr "
               "option on TCP socket.\n");
     close(tcpSocket_);
+    tcpSocket_ = INVALID_SOCKET;
     return false;
   }
 
-  if (bind(tcpSocket_, (struct sockaddr *)&sAddr_, sizeof(sAddr_)) < 0) {
-    ERROR_MSG("PythonServer::initTCPListener: unable to bind to network "
-              "interface.\n");
+  // The developer console is a local debugging facility.  Restrict it to the
+  // loopback interface; remote access is intentionally only through an
+  // operator-managed tunnel (for example, SSH port forwarding).
+  struct sockaddr_in telnetAddr = sAddr_;
+  telnetAddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+  if (bind(tcpSocket_, (struct sockaddr *)&telnetAddr, sizeof(telnetAddr)) < 0) {
+    ERROR_MSG("PythonServer::initTCPListener: unable to bind developer console "
+              "to 127.0.0.1.\n");
     close(tcpSocket_);
+    tcpSocket_ = INVALID_SOCKET;
     return false;
   }
 
@@ -556,10 +568,12 @@ bool PythonServer::initTelnetConsole() {
     ERROR_MSG(
         "PythonServer::initTCPListener: unable to listen for incoming data.\n");
     close(tcpSocket_);
+    tcpSocket_ = INVALID_SOCKET;
     return false;
   }
 
-  INFO_MSG("Python server is listening on TCP port %d.\n", PYTHON_SERVER_PORT);
+  INFO_MSG("Python developer console is listening on 127.0.0.1:%d.\n",
+           PYTHON_SERVER_PORT);
   maxFD_ = max(maxFD_, tcpSocket_);
   FD_SET(tcpSocket_, &masterFDSet_);
 

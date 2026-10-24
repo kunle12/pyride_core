@@ -63,9 +63,9 @@ The CMake flag `-DOLD_NAO` selects between `<opus/opus.h>` and `<opus.h>`.
 | `PyRideCustom.h` | Extended command handler interface |
 | `qiproject.xml` | QiBuild project metadata |
 
-## Telnet Console
+## Developer Console
 
-The telnet server listens on port **27005**. Each connecting client gets a `PythonSession` with full line editing, command history (up/down arrows), and tab-completion for Python objects.
+The developer console listens on **127.0.0.1:27005** only when `DevMode` is enabled in `pyrideconfig.xml`. Each connecting client gets a `PythonSession` with full line editing, command history (up/down arrows), and tab-completion for Python objects. Do not bind it to a public interface; use an SSH tunnel for remote access.
 
 ### UTF-8 Support
 

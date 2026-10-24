@@ -20,6 +20,28 @@ namespace pyride {
 
 static const char rnd_seed[] = "This is my randomn seed generator";
 
+// Accept the historical enable/disable spelling as well as the common
+// boolean spellings.  XML text nodes may contain surrounding whitespace.
+static bool parseEnabledValue(const char *text) {
+  if (!text) {
+    return false;
+  }
+
+  std::string value(text);
+  const size_t first = value.find_first_not_of(" \t\r\n");
+  if (first == std::string::npos) {
+    return false;
+  }
+  const size_t last = value.find_last_not_of(" \t\r\n");
+  value = value.substr(first, last - first + 1);
+
+  return strcasecmp(value.c_str(), "enable") == 0 ||
+         strcasecmp(value.c_str(), "enabled") == 0 ||
+         strcasecmp(value.c_str(), "true") == 0 ||
+         strcasecmp(value.c_str(), "yes") == 0 ||
+         strcasecmp(value.c_str(), "on") == 0 || value == "1";
+}
+
 AppConfigManager *AppConfigManager::instance() {
   static AppConfigManager inst;
   return &inst;
@@ -27,7 +49,7 @@ AppConfigManager *AppConfigManager::instance() {
 
 AppConfigManager::AppConfigManager()
     : clientID_((1 << 4) | BlueTeam), // blue team 1
-      allowPythonTelnet_(true) {
+      devMode_(false) {
   RAND_seed(rnd_seed, sizeof(rnd_seed));
   defaultPose_.x = defaultPose_.y = defaultPose_.theta = 0.0;
 }
@@ -69,12 +91,11 @@ void AppConfigManager::loadRobotInfo(TiXmlNode *robotInfoNode) {
   TiXmlElement *teamColourElem = NULL;
   TiXmlElement *memberIDElem = NULL;
   TiXmlElement *defaultPoseElem = NULL;
-  TiXmlElement *enablePySvrElem = NULL;
+  TiXmlElement *devModeElem = NULL;
 
   char *colourText = NULL;
   char *idText = NULL;
   char *posText = NULL;
-  char *pySvrText = NULL;
   int teamColour = -1;
   int memberID = -1;
   float posx = 0.0, posy = 0.0;
@@ -112,25 +133,32 @@ getpos:
   if (!defaultPoseElem) {
     WARNING_MSG("LoadConfig: "
                 "missing default position.");
-    goto getpysvr;
+    goto get_dev_mode;
   }
   posText = (char *)defaultPoseElem->GetText();
   if (!posText || sscanf(posText, "%f %f", &posx, &posy) != 2) {
     ERROR_MSG("LoadConfig: "
               "invalid default position.");
-    goto getpysvr;
+    goto get_dev_mode;
   }
   defaultPose_.x = posx;
   defaultPose_.y = posy;
 
-getpysvr:
-  enablePySvrElem = robotInfoNode->FirstChildElement("RemotePythonAccess");
-  if (!enablePySvrElem) {
-    allowPythonTelnet_ = false;
+get_dev_mode:
+  devMode_ = false;
+  devModeElem = robotInfoNode->FirstChildElement("DevMode");
+  if (!devModeElem) {
+    // Keep the old tag from silently enabling a development console after
+    // the rename.  The explicit migration is a deliberate security default.
+    if (robotInfoNode->FirstChildElement("RemotePythonAccess")) {
+      WARNING_MSG(
+          "LoadConfig: RemotePythonAccess is no longer supported; set "
+          "<DevMode>enable</DevMode> to opt in.\n");
+    }
     return;
   }
-  pySvrText = (char *)enablePySvrElem->GetText();
-  allowPythonTelnet_ = (pySvrText && (strcasecmp(pySvrText, "enable") == 0));
+
+  devMode_ = parseEnabledValue(devModeElem->GetText());
 }
 
 void AppConfigManager::loadUserInfo(TiXmlNode *userInfoNode) {
@@ -516,8 +544,8 @@ void AppConfigManager::saveConfig() {
   fprintf(outFile, "  <MemberID> %d </MemberID>\n", (clientID_ >> 4) & 0xf);
   fprintf(outFile, "  <DefaultPosition> %.1f %.1f </DefaultPosition>\n",
           defaultPose_.x, defaultPose_.y);
-  fprintf(outFile, "  <RemotePythonAccess> %s </RemotePythonAccess>\n",
-          allowPythonTelnet_ ? "enable" : "disable");
+  fprintf(outFile, "  <DevMode> %s </DevMode>\n",
+          devMode_ ? "enable" : "disable");
 
   char *encodeBuf = NULL;
   if (deviceInfoList_.size()) {
